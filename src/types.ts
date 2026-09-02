@@ -66,10 +66,13 @@ export interface Routine {
   week: (string | null)[];
 }
 
-/** Progreso de una fecha concreta del calendario. */
+/** Progreso / ajuste de una fecha concreta del calendario. */
 export interface DayLog {
-  /** Plantilla que estaba asignada ese día (se guarda por si luego cambia la semana). */
-  templateId: string;
+  /**
+   * Plantilla usada ESA fecha. Puede diferir de la asignación semanal (cambio puntual).
+   * `null` = ese día se marcó como descanso desde la pantalla "hoy".
+   */
+  templateId: string | null;
   /** exerciseId -> estado de cada serie (índice = nº de serie). */
   sets: Record<string, boolean[]>;
 }

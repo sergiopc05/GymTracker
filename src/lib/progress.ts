@@ -14,9 +14,10 @@ export interface ResolvedDay {
 export function resolveDay(store: Store, date: Date): ResolvedDay {
   const iso = isoDate(date);
   const log = store.logs[iso] ?? null;
-  const weekdayId = store.routine.week[mondayIndex(date)];
-  // Si ya hay log, manda la plantilla que se registró ese día.
-  const templateId = log?.templateId ?? weekdayId ?? null;
+  const weekdayId = store.routine.week[mondayIndex(date)] ?? null;
+  // Si hay log, manda su plantilla (que puede ser null = descanso puntual).
+  // Si no, la asignación semanal.
+  const templateId = log ? log.templateId : weekdayId;
   const template = templateId
     ? (store.templates.find((t) => t.id === templateId) ?? null)
     : null;

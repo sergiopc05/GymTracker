@@ -398,6 +398,20 @@ textarea:focus {
   font-size: 12px;
 }
 
+.daynote {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px dashed var(--type, var(--border));
+  border-radius: var(--radius);
+  font-size: 12px;
+}
+
+.daynote .linkbtn {
+  font-size: 12px;
+}
+
 /* ------------------------------------------------------------ hoy: ejercicios */
 
 .exlist {

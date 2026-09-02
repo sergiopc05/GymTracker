@@ -108,8 +108,10 @@ function sanitizeLogs(raw: unknown): Store["logs"] {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) continue;
     const e = asObject(value);
     if (!e) continue;
-    const templateId = str(e.templateId);
-    if (!templateId) continue;
+    const hasTid = typeof e.templateId === "string" && e.templateId.length > 0;
+    const explicitRest = e.templateId === null; // día cancelado a mano
+    if (!hasTid && !explicitRest) continue;
+    const templateId = hasTid ? (e.templateId as string) : null;
     const sets: Record<string, boolean[]> = {};
     const rawSets = asObject(e.sets);
     if (rawSets) {
@@ -208,7 +210,9 @@ interface StoreContextValue {
   assignTemplate: (weekday: number, templateId: string | null) => void;
 
   toggleSet: (iso: string, templateId: string, exId: string, setIndex: number) => void;
+  overrideDay: (iso: string, templateId: string | null) => void;
   resetDay: (iso: string) => void;
+  clearSets: (iso: string) => void;
 
   loadExample: () => void;
   exportJson: () => string;
@@ -322,7 +326,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     (iso: string, templateId: string, exId: string, setIndex: number) => {
       setStore((s) => {
         const cur = s.logs[iso];
-        const tId = cur?.templateId || templateId;
         const arr = (cur?.sets[exId] ?? []).slice();
         while (arr.length <= setIndex) arr.push(false);
         arr[setIndex] = !arr[setIndex];
@@ -330,7 +333,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...s,
           logs: {
             ...s.logs,
-            [iso]: { templateId: tId, sets: { ...(cur?.sets ?? {}), [exId]: arr } },
+            [iso]: { templateId, sets: { ...(cur?.sets ?? {}), [exId]: arr } },
           },
         };
       });
@@ -338,12 +341,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  /** Cambia (o cancela con null) el entreno de una fecha concreta, sin tocar la semana. */
+  const overrideDay = useCallback((iso: string, templateId: string | null) => {
+    setStore((s) => {
+      const cur = s.logs[iso];
+      const keepSets = cur && cur.templateId === templateId ? cur.sets : {};
+      return { ...s, logs: { ...s.logs, [iso]: { templateId, sets: keepSets } } };
+    });
+  }, []);
+
+  /** Deja el día como el plan de la semana, sin nada marcado (borra el log). */
   const resetDay = useCallback((iso: string) => {
     setStore((s) => {
       if (!s.logs[iso]) return s;
       const logs = { ...s.logs };
       delete logs[iso];
       return { ...s, logs };
+    });
+  }, []);
+
+  /** Desmarca todas las series pero conserva el entreno (y el cambio puntual si lo hay). */
+  const clearSets = useCallback((iso: string) => {
+    setStore((s) => {
+      const cur = s.logs[iso];
+      if (!cur) return s;
+      return { ...s, logs: { ...s.logs, [iso]: { ...cur, sets: {} } } };
     });
   }, []);
 
@@ -384,7 +406,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       moveExercise,
       assignTemplate,
       toggleSet,
+      overrideDay,
       resetDay,
+      clearSets,
       loadExample,
       exportJson,
       importJson,
@@ -402,7 +426,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       moveExercise,
       assignTemplate,
       toggleSet,
+      overrideDay,
       resetDay,
+      clearSets,
       loadExample,
       exportJson,
       importJson,
