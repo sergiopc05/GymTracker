@@ -27,7 +27,7 @@ interface Props {
 }
 
 export function TodayScreen({ date, setDate, goTo }: Props) {
-  const { store, toggleSet, overrideDay, resetDay, clearSets } = useStore();
+  const { store, toggleSet, setDayDone, overrideDay, resetDay, clearSets } = useStore();
 
   const today = startOfToday();
   const isToday = isoDate(date) === isoDate(today);
@@ -191,9 +191,24 @@ export function TodayScreen({ date, setDate, goTo }: Props) {
 
         {template && template.exercises.length === 0 && template.type !== "rest" && (
           <>
-            <p className="dim">La plantilla «{template.name}» no tiene ejercicios.</p>
+            <p className="dim">
+              La plantilla «{template.name}» no tiene ejercicios que marcar.
+            </p>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setDayDone(iso, template.id, !progress.complete)}
+            >
+              {progress.complete ? "[ desmarcar día ]" : "[ marcar día como hecho ]"}
+            </button>
+            {progress.complete && <p className="ok">$ día completado ✔</p>}
+            {streak > 0 && (
+              <p className="dim">
+                racha: {streak} día{streak === 1 ? "" : "s"}
+              </p>
+            )}
             <button type="button" className="linkbtn" onClick={() => goTo("plantillas")}>
-              editar plantilla &rarr;
+              añadir ejercicios &rarr;
             </button>
           </>
         )}

@@ -77,6 +77,11 @@ export interface DayLog {
   templateId: string | null;
   /** exerciseId -> estado de cada serie (índice = nº de serie). */
   sets: Record<string, boolean[]>;
+  /**
+   * Día marcado como hecho a mano. Solo se usa cuando la plantilla no tiene
+   * ejercicios que marcar; con ejercicios, el día se completa al marcarlos todos.
+   */
+  done?: boolean;
 }
 
 export interface Store {

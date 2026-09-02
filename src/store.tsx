@@ -19,6 +19,7 @@ import type {
 import { DAY_TYPES, RUN_MODALITIES, exerciseKindForType } from "./types";
 import { emptyStore, exampleData } from "./defaultData";
 import { id } from "./lib/id";
+import { mondayIndex, parseIso } from "./lib/dates";
 
 const KEY = "gymtracker:v2";
 
@@ -126,7 +127,7 @@ function sanitizeLogs(raw: unknown): Store["logs"] {
         if (Array.isArray(arr)) sets[exId] = arr.map(Boolean);
       }
     }
-    out[dateKey] = { templateId, sets };
+    out[dateKey] = { templateId, sets, done: e.done === true ? true : undefined };
   }
   return out;
 }
@@ -218,6 +219,7 @@ interface StoreContextValue {
   assignTemplate: (weekday: number, templateId: string | null) => void;
 
   toggleSet: (iso: string, templateId: string, exId: string, setIndex: number) => void;
+  setDayDone: (iso: string, templateId: string, done: boolean) => void;
   overrideDay: (iso: string, templateId: string | null) => void;
   resetDay: (iso: string) => void;
   clearSets: (iso: string) => void;
@@ -354,6 +356,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  /**
+   * Marca (o desmarca) un día como hecho a mano. Para plantillas sin ejercicios
+   * que marcar. Al desmarcar sin series registradas, borra el log (vuelve al plan).
+   */
+  const setDayDone = useCallback((iso: string, templateId: string, done: boolean) => {
+    setStore((s) => {
+      const cur = s.logs[iso];
+      if (done) {
+        return {
+          ...s,
+          logs: {
+            ...s.logs,
+            [iso]: { templateId, sets: cur?.sets ?? {}, done: true },
+          },
+        };
+      }
+      if (!cur) return s;
+      const logs = { ...s.logs };
+      const hasSets = Object.values(cur.sets).some((arr) => arr.some(Boolean));
+      const weekdayId = s.routine.week[mondayIndex(parseIso(iso))] ?? null;
+      const isOverride = cur.templateId !== weekdayId;
+      // Sin nada más que guardar y sin cambio puntual: volver al plan de la semana.
+      if (hasSets || isOverride) logs[iso] = { ...cur, done: undefined };
+      else delete logs[iso];
+      return { ...s, logs };
+    });
+  }, []);
+
   /** Cambia (o cancela con null) el entreno de una fecha concreta, sin tocar la semana. */
   const overrideDay = useCallback((iso: string, templateId: string | null) => {
     setStore((s) => {
@@ -420,6 +450,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       moveExercise,
       assignTemplate,
       toggleSet,
+      setDayDone,
       overrideDay,
       resetDay,
       clearSets,
@@ -441,6 +472,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       moveExercise,
       assignTemplate,
       toggleSet,
+      setDayDone,
       overrideDay,
       resetDay,
       clearSets,

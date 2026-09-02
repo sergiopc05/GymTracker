@@ -7,7 +7,7 @@ const EMOJIS = [
   "🏋️", "💪", "🦵", "🏆", "🔥", "⚡",
   "🏃", "🚶", "🥾", "🚴", "⛰️", "🧗",
   "🏊", "🤽", "🌊", "🤸", "🧘", "🥊",
-  "🧱", "🎯", "⏱️", "📈", "🛌", "☕",
+  "🧱", "🎯", "⏱️", "📈", "🚧", "🛌", "☕",
 ];
 
 /** Rejilla de emojis para identificar la plantilla. Toca para elegir/quitar. */

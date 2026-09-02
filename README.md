@@ -11,6 +11,7 @@ serie que completas.
   - _running_: modalidad (andar / trotar / fartlek / carrera), distancia, tiempo, intervalos.
   - _natación_: series × distancia, descanso, tiempo por serie.
 - **Registro por serie**: marcas cada `[ ]` → `[x]`; el ejercicio se cierra al completarlas.
+  Si la plantilla no tiene ejercicios, marcas el día entero como hecho con un botón.
 - **Funciona sin conexión.** Tras la primera carga no vuelve a necesitar internet (modo
   avión incluido). No hay servidor: los datos se guardan solo en tu dispositivo.
 - **Instalable en el iPhone** desde Safari → _Añadir a pantalla de inicio_.

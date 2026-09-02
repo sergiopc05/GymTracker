@@ -42,11 +42,13 @@ export interface DayProgress {
   totalSets: number;
   doneExercises: number;
   totalExercises: number;
-  /** Descanso, o plantilla sin ejercicios, o todas las series hechas. */
+  /** Descanso, o día marcado a mano, o todas las series hechas. */
   complete: boolean;
-  /** Hay plantilla con al menos un ejercicio. */
+  /** Hay una plantilla que completar (no es descanso). */
   hasPlan: boolean;
   rest: boolean;
+  /** La plantilla no tiene ejercicios: se completa marcando el día a mano. */
+  manual: boolean;
 }
 
 export function dayProgress(resolved: ResolvedDay): DayProgress {
@@ -64,7 +66,11 @@ export function dayProgress(resolved: ResolvedDay): DayProgress {
     }
   }
   const totalExercises = template?.exercises.length ?? 0;
-  const allDone = totalExercises === 0 ? true : doneExercises === totalExercises;
+  // Plantilla sin ejercicios que marcar: el día se completa a mano, no por defecto.
+  const manual = !rest && totalExercises === 0;
+  const allDone = manual
+    ? log?.done === true
+    : totalExercises > 0 && doneExercises === totalExercises;
 
   return {
     doneSets,
@@ -74,8 +80,9 @@ export function dayProgress(resolved: ResolvedDay): DayProgress {
     // Un día de descanso siempre está "cubierto"; los ejercicios (p.ej. caminar)
     // son opcionales y no cuentan para la racha.
     complete: rest ? true : allDone,
-    hasPlan: rest ? false : totalExercises > 0,
+    hasPlan: !rest,
     rest,
+    manual,
   };
 }
 
