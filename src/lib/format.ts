@@ -63,7 +63,13 @@ export function fmtExerciseSpec(ex: Exercise): string {
   const parts: string[] = [];
 
   if (ex.kind === "strength") {
-    parts.push(`${ex.sets}×${ex.reps || "?"}`);
+    const per =
+      ex.measure === "time"
+        ? ex.durationSec != null
+          ? fmtSeconds(ex.durationSec)
+          : "?"
+        : ex.reps || "?";
+    parts.push(`${ex.sets}×${per}`);
     if (ex.weightKg != null) parts.push(`${ex.weightKg} kg`);
     if (ex.restSec != null) parts.push(fmtRest(ex.restSec));
     return parts.join(" · ");
@@ -80,9 +86,13 @@ export function fmtExerciseSpec(ex: Exercise): string {
       return parts.join(" · ");
     }
 
+    // "andar" muestra solo la medida elegida; el resto muestra lo que tenga.
+    const walkBy = ex.measure ?? "duration";
+    const showDist = ex.modality !== "andar" || walkBy === "distance";
+    const showDur = ex.modality !== "andar" || walkBy === "duration";
     const chunk: string[] = [];
-    if (ex.distanceM != null && ex.modality !== "andar") chunk.push(fmtDistance(ex.distanceM));
-    if (ex.durationMin != null) chunk.push(fmtMinutes(ex.durationMin));
+    if (showDist && ex.distanceM != null) chunk.push(fmtDistance(ex.distanceM));
+    if (showDur && ex.durationMin != null) chunk.push(fmtMinutes(ex.durationMin));
     const body = chunk.join(" ") || "—";
     parts.push(ex.sets > 1 ? `${ex.sets}× ${body}` : body);
     if (ex.sets > 1 && ex.restSec != null) parts.push(fmtRest(ex.restSec));

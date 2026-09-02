@@ -28,13 +28,24 @@ function strength(
   weightKg?: number,
   restSec?: number,
 ): StrengthExercise {
-  return { kind: "strength", id: id("e"), name, sets, reps, weightKg, restSec };
+  return { kind: "strength", id: id("e"), name, sets, measure: "reps", reps, weightKg, restSec };
+}
+
+/** Ejercicio de fuerza medido por tiempo (plancha, isométricos). */
+function hold(
+  name: string,
+  sets: number,
+  durationSec: number,
+  restSec?: number,
+): StrengthExercise {
+  return { kind: "strength", id: id("e"), name, sets, measure: "time", reps: "", durationSec, restSec };
 }
 
 function run(
   modality: RunModality,
   sets: number,
   opts: {
+    measure?: "distance" | "duration";
     distanceM?: number;
     durationMin?: number;
     effortMin?: number;
@@ -91,8 +102,8 @@ export function exampleData(): Store {
   ]);
 
   const core = tpl("🧱", "Core corto", "core", [
-    strength("Plancha", 3, "45 s", undefined, 30),
-    strength("Hollow hold", 3, "30 s", undefined, 30),
+    hold("Plancha", 3, 45, 30),
+    hold("Hollow hold", 3, 30, 30),
     strength("Rueda abdominal", 3, "10", undefined, 45),
     strength("Elevación de piernas colgado", 3, "12", undefined, 45),
   ]);
@@ -103,9 +114,9 @@ export function exampleData(): Store {
   ]);
 
   const series = tpl("⏱️", "Series en pista", "running", [
-    run("andar", 1, { distanceM: 1500, durationMin: 12, note: "calentamiento" }),
+    run("andar", 1, { measure: "distance", distanceM: 1500, note: "calentamiento" }),
     run("carrera", 6, { distanceM: 400, restSec: 90 }),
-    run("andar", 1, { distanceM: 1500, note: "enfriamiento" }),
+    run("andar", 1, { measure: "distance", distanceM: 1500, note: "enfriamiento" }),
   ]);
 
   const fartlek = tpl("⚡", "Fartlek", "running", [

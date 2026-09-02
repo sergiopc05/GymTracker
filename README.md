@@ -7,8 +7,9 @@ serie que completas.
 - **5 tipos de día**: gym, running, core, natación y descanso (uno por día). El de descanso
   puede ir vacío o llevar una caminata opcional que marcar.
 - **Ejercicios con detalle según el tipo**:
-  - _gym / core_: series, repeticiones, peso, descanso entre series.
+  - _gym / core_: series, peso, descanso, y cada serie por **repeticiones o por tiempo**.
   - _running_: modalidad (andar / trotar / fartlek / carrera), distancia, tiempo, intervalos.
+    En _andar_ eliges medir por tiempo o por distancia.
   - _natación_: series × distancia, descanso, tiempo por serie.
 - **Registro por serie**: marcas cada `[ ]` → `[x]`; el ejercicio se cierra al completarlas.
   Si la plantilla no tiene ejercicios, marcas el día entero como hecho con un botón.
@@ -43,7 +44,7 @@ npm run dev       # http://localhost:5173/GymTracker/
 Otros comandos:
 
 ```bash
-npm run build     # genera dist/ (incluye iconos + service worker)
+npm run build     # genera dist/ (service worker incluido)
 npm run preview    # sirve dist/ en local para probar el modo offline real
 npm run typecheck
 ```
@@ -92,13 +93,13 @@ semana e historial, y volver a importarlo.
 ## Estructura
 
 ```
-scripts/generate-icons.mjs   Genera los PNG del icono sin dependencias (node:zlib)
+public/                      Iconos PWA (favicon, pwa-*, apple-touch-icon)
 src/
   types.ts                   Modelo de datos (plantillas, tipos de día, ejercicios)
   store.tsx                  Estado global + persistencia en localStorage
   defaultData.ts             Store vacío + rutina de ejemplo
   lib/dates.ts               Utilidades de fecha
-  lib/progress.ts            Progreso por serie, racha, resolución del día
+  lib/progress.ts            Plan efectivo del día, progreso por serie, racha
   lib/format.ts              Formateo de fichas de ejercicio (4×8 · 60 kg · r90")
   components/                TabBar, SetBoxes, AsciiBar, ExerciseEditor, EmojiPicker
   screens/                   TodayScreen, CalendarScreen, WeekScreen, TemplatesScreen, SettingsScreen
@@ -107,5 +108,4 @@ src/
 ## Stack
 
 Vite 8 · React 18 · TypeScript · vite-plugin-pwa 1.3 (Workbox). Sin dependencias en runtime
-más allá de React. Los iconos se generan en `prebuild`/`predev` con un script propio
-(`node:zlib`, cero dependencias).
+más allá de React. Los iconos son PNG estáticos en `public/`.

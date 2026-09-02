@@ -10,8 +10,12 @@ export interface StrengthExercise {
   id: string;
   name: string;
   sets: number;
-  /** Repeticiones como texto libre: "8", "8-10", "AMRAP", "30 s". */
+  /** Cómo se cuenta cada serie: por repeticiones (`reps`) o por tiempo (`durationSec`). */
+  measure: "reps" | "time";
+  /** Repeticiones como texto libre: "8", "8-10", "AMRAP". */
   reps: string;
+  /** Segundos por serie cuando `measure === "time"` (plancha, isométricos). */
+  durationSec?: number;
   weightKg?: number;
   /** Descanso entre series, en segundos. */
   restSec?: number;
@@ -27,9 +31,11 @@ export interface RunExercise {
   id: string;
   modality: RunModality;
   sets: number;
-  /** Metros. No aplica a "andar". */
+  /** Solo "andar": medir por distancia o por tiempo. Ausente = tiempo. */
+  measure?: "distance" | "duration";
+  /** Metros. */
   distanceM?: number;
-  /** Minutos. "andar" solo usa esto. No se usa en "fartlek". */
+  /** Minutos. No se usa en "fartlek". */
   durationMin?: number;
   /** Fartlek: minutos de carrera (parte fuerte) por repetición. */
   effortMin?: number;

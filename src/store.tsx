@@ -59,7 +59,9 @@ function sanitizeExercise(raw: unknown, kind: Exercise["kind"]): Exercise | null
       id: exId,
       name: str(o.name),
       sets,
+      measure: o.measure === "time" ? "time" : "reps",
       reps: str(o.reps) || "10",
+      durationSec: numOrU(o.durationSec),
       weightKg: numOrU(o.weightKg),
       restSec: numOrU(o.restSec),
     };
@@ -71,6 +73,12 @@ function sanitizeExercise(raw: unknown, kind: Exercise["kind"]): Exercise | null
       id: exId,
       modality: RUN_MODALITIES.includes(m) ? m : "trotar",
       sets,
+      measure:
+        o.measure === "distance"
+          ? "distance"
+          : o.measure === "duration"
+            ? "duration"
+            : undefined,
       distanceM: numOrU(o.distanceM),
       durationMin: numOrU(o.durationMin),
       effortMin: numOrU(o.effortMin),
@@ -256,12 +264,16 @@ function newExercise(kind: Exercise["kind"]): Exercise {
   if (kind === "run") return { kind: "run", id: id("e"), modality: "trotar", sets: 1 };
   if (kind === "swim")
     return { kind: "swim", id: id("e"), name: "", sets: 1, distanceM: 100 };
-  return { kind: "strength", id: id("e"), name: "", sets: 3, reps: "10" };
+  return { kind: "strength", id: id("e"), name: "", sets: 3, measure: "reps", reps: "10" };
 }
 
-export type ExercisePatch = Partial<Omit<StrengthExercise, "kind" | "id">> &
-  Partial<Omit<RunExercise, "kind" | "id">> &
-  Partial<Omit<SwimExercise, "kind" | "id">>;
+// `measure` significa cosas distintas en fuerza y en running, así que se saca de la
+// intersección y se re-añade como unión para que el patch valga para ambos.
+export type ExercisePatch = Partial<Omit<StrengthExercise, "kind" | "id" | "measure">> &
+  Partial<Omit<RunExercise, "kind" | "id" | "measure">> &
+  Partial<Omit<SwimExercise, "kind" | "id">> & {
+    measure?: StrengthExercise["measure"] | RunExercise["measure"];
+  };
 
 /** Transformaciones puras sobre una lista de ejercicios (plantilla o día). */
 const exArray = {

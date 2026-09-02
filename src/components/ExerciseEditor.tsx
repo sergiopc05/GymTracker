@@ -81,16 +81,36 @@ export function ExerciseEditor({
                   onChange={(e) => onPatch({ sets: Math.max(1, Number(e.target.value) || 1) })}
                 />
               </Field>
-              <Field label="reps">
-                <input
-                  type="text"
-                  value={ex.reps}
-                  placeholder="8-10"
-                  onChange={(e) => onPatch({ reps: e.target.value })}
-                />
+              <Field label="medida">
+                <select
+                  value={ex.measure}
+                  onChange={(e) => onPatch({ measure: e.target.value as "reps" | "time" })}
+                >
+                  <option value="reps">reps</option>
+                  <option value="time">tiempo</option>
+                </select>
               </Field>
             </div>
             <div className="frow">
+              {ex.measure === "time" ? (
+                <Field label="segundos">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={ex.durationSec ?? ""}
+                    onChange={(e) => onPatch({ durationSec: numOrU(e.target.value) })}
+                  />
+                </Field>
+              ) : (
+                <Field label="reps">
+                  <input
+                    type="text"
+                    value={ex.reps}
+                    placeholder="8-10"
+                    onChange={(e) => onPatch({ reps: e.target.value })}
+                  />
+                </Field>
+              )}
               <Field label="peso kg">
                 <input
                   type="number"
@@ -158,7 +178,20 @@ export function ExerciseEditor({
               </div>
             ) : (
               <div className="frow">
-                {ex.modality !== "andar" && (
+                {ex.modality === "andar" && (
+                  <Field label="medida">
+                    <select
+                      value={ex.measure ?? "duration"}
+                      onChange={(e) =>
+                        onPatch({ measure: e.target.value as "distance" | "duration" })
+                      }
+                    >
+                      <option value="duration">tiempo</option>
+                      <option value="distance">distancia</option>
+                    </select>
+                  </Field>
+                )}
+                {(ex.modality !== "andar" || (ex.measure ?? "duration") === "distance") && (
                   <Field label="distancia m">
                     <input
                       type="number"
@@ -168,14 +201,16 @@ export function ExerciseEditor({
                     />
                   </Field>
                 )}
-                <Field label="duración min">
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    value={ex.durationMin ?? ""}
-                    onChange={(e) => onPatch({ durationMin: numOrU(e.target.value) })}
-                  />
-                </Field>
+                {(ex.modality !== "andar" || (ex.measure ?? "duration") === "duration") && (
+                  <Field label="duración min">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={ex.durationMin ?? ""}
+                      onChange={(e) => onPatch({ durationMin: numOrU(e.target.value) })}
+                    />
+                  </Field>
+                )}
                 {ex.sets > 1 && (
                   <Field label="descanso s">
                     <input
