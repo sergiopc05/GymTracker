@@ -1,14 +1,29 @@
 // Cálculo de progreso y racha a partir de plantillas + asignación semanal + logs.
 
-import type { DayLog, Exercise, Store, Template } from "../types";
+import type { DayLog, DayType, Exercise, Store, Template } from "../types";
 import { addDays, isoDate, mondayIndex, startOfToday } from "./dates";
+
+/** Plan efectivo de un día: el snapshot congelado o la plantilla en vivo. */
+export interface ResolvedPlan {
+  name: string;
+  type: DayType;
+  emoji?: string;
+  /** Referencia al snapshot o a la plantilla — nunca se copia aquí. */
+  exercises: Exercise[];
+  /** Viene de un snapshot del día (inmune a cambios de la plantilla). */
+  frozen: boolean;
+  /** El usuario editó los ejercicios de este día. */
+  customized: boolean;
+}
 
 export interface ResolvedDay {
   iso: string;
-  /** Plantilla asignada a ese día (null = descanso). */
-  template: Template | null;
   /** Log guardado para esa fecha, si existe. */
   log: DayLog | null;
+  /** Plantilla viva enlazada (vínculo, plan de la semana, "¿borrada?"). null = descanso. */
+  template: Template | null;
+  /** Qué mostrar y puntuar ese día. null = descanso. */
+  plan: ResolvedPlan | null;
 }
 
 export function resolveDay(store: Store, date: Date): ResolvedDay {
@@ -21,7 +36,29 @@ export function resolveDay(store: Store, date: Date): ResolvedDay {
   const template = templateId
     ? (store.templates.find((t) => t.id === templateId) ?? null)
     : null;
-  return { iso, template, log };
+
+  let plan: ResolvedPlan | null = null;
+  if (log?.snapshot) {
+    plan = {
+      name: log.snapshot.name,
+      type: log.snapshot.type,
+      emoji: log.snapshot.emoji,
+      exercises: log.snapshot.exercises,
+      frozen: true,
+      customized: log.customized === true,
+    };
+  } else if (template) {
+    plan = {
+      name: template.name,
+      type: template.type,
+      emoji: template.emoji,
+      exercises: template.exercises,
+      frozen: false,
+      customized: false,
+    };
+  }
+
+  return { iso, log, template, plan };
 }
 
 /** Series marcadas de un ejercicio (sin pasarse de su total). */
@@ -44,29 +81,29 @@ export interface DayProgress {
   totalExercises: number;
   /** Descanso, o día marcado a mano, o todas las series hechas. */
   complete: boolean;
-  /** Hay una plantilla que completar (no es descanso). */
+  /** Hay un plan que completar (no es descanso). */
   hasPlan: boolean;
   rest: boolean;
-  /** La plantilla no tiene ejercicios: se completa marcando el día a mano. */
+  /** El plan no tiene ejercicios: se completa marcando el día a mano. */
   manual: boolean;
 }
 
 export function dayProgress(resolved: ResolvedDay): DayProgress {
-  const { template, log } = resolved;
-  const rest = !template || template.type === "rest";
+  const { plan, log } = resolved;
+  const rest = !plan || plan.type === "rest";
 
   let doneSets = 0;
   let totalSets = 0;
   let doneExercises = 0;
-  if (template) {
-    for (const ex of template.exercises) {
+  if (plan) {
+    for (const ex of plan.exercises) {
       totalSets += ex.sets;
       doneSets += setsDone(ex, log);
       if (exerciseComplete(ex, log)) doneExercises++;
     }
   }
-  const totalExercises = template?.exercises.length ?? 0;
-  // Plantilla sin ejercicios que marcar: el día se completa a mano, no por defecto.
+  const totalExercises = plan?.exercises.length ?? 0;
+  // Plan sin ejercicios que marcar: el día se completa a mano, no por defecto.
   const manual = !rest && totalExercises === 0;
   const allDone = manual
     ? log?.done === true

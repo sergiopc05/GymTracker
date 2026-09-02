@@ -1,9 +1,9 @@
 // Formateo de fichas de ejercicio y unidades, con estética compacta de terminal.
 
-import type { DayType, Exercise, RunModality, Template } from "../types";
+import type { DayType, Exercise, RunModality } from "../types";
 
-/** Nombre de plantilla con su emoji delante, si tiene. */
-export function tplLabel(t: Template): string {
+/** Nombre con su emoji delante, si tiene. Vale para plantillas y para planes de día. */
+export function tplLabel(t: { name: string; emoji?: string }): string {
   return t.emoji ? `${t.emoji} ${t.name}` : t.name;
 }
 

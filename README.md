@@ -12,6 +12,10 @@ serie que completas.
   - _natación_: series × distancia, descanso, tiempo por serie.
 - **Registro por serie**: marcas cada `[ ]` → `[x]`; el ejercicio se cierra al completarlas.
   Si la plantilla no tiene ejercicios, marcas el día entero como hecho con un botón.
+- **El pasado no se reescribe**: en cuanto marcas algo en un día, ese día queda fijado.
+  Después puedes editar la plantilla libremente — solo cambia en los días aún sin marcar.
+- **Editar un solo día**: desde «hoy» puedes ajustar los ejercicios de una fecha concreta
+  (añadir, quitar, cambiar pesos…) sin tocar la plantilla, y volver a ella cuando quieras.
 - **Funciona sin conexión.** Tras la primera carga no vuelve a necesitar internet (modo
   avión incluido). No hay servidor: los datos se guardan solo en tu dispositivo.
 - **Instalable en el iPhone** desde Safari → _Añadir a pantalla de inicio_.
@@ -20,7 +24,7 @@ serie que completas.
 
 | Pantalla        | Para qué                                                                     |
 | --------------- | -------------------------------------------------------------------------- |
-| **hoy**         | El entreno del día; marcas serie a serie. Flechas para otros días. Puedes cambiar o cancelar el entreno de una fecha concreta sin tocar la semana. |
+| **hoy**         | El entreno del día; marcas serie a serie. Flechas para otros días. Puedes cambiar o cancelar el entreno de una fecha, o editar sus ejercicios solo para ese día, sin tocar la semana ni la plantilla. |
 | **mes**         | Calendario mensual: color y emoji por tipo, fondo lleno = día hecho, `×` = sin hacer. Toca un día para abrirlo. |
 | **semana**      | Los 7 días con su plantilla; asignar plantilla o abrir su editor.           |
 | **plantillas**  | Biblioteca: crear/editar plantillas (emoji, nombre, tipo, ejercicios).      |

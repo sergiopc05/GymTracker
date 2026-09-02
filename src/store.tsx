@@ -8,6 +8,8 @@ import {
   type ReactNode,
 } from "react";
 import type {
+  DayLog,
+  DayPlanSnapshot,
   DayType,
   Exercise,
   RunExercise,
@@ -20,6 +22,7 @@ import { DAY_TYPES, RUN_MODALITIES, exerciseKindForType } from "./types";
 import { emptyStore, exampleData } from "./defaultData";
 import { id } from "./lib/id";
 import { mondayIndex, parseIso } from "./lib/dates";
+import { resolveDay } from "./lib/progress";
 
 const KEY = "gymtracker:v2";
 
@@ -87,24 +90,46 @@ function sanitizeExercise(raw: unknown, kind: Exercise["kind"]): Exercise | null
   };
 }
 
-function sanitizeTemplate(raw: unknown): Template | null {
-  const o = asObject(raw);
-  if (!o) return null;
-  const t = str(o.type) as DayType;
-  const type: DayType = DAY_TYPES.includes(t) ? t : "gym";
-  const kind = exerciseKindForType(type);
-  const exercises = Array.isArray(o.exercises)
-    ? o.exercises
+function sanitizeDayType(v: unknown): DayType | null {
+  const t = str(v) as DayType;
+  return DAY_TYPES.includes(t) ? t : null;
+}
+
+function sanitizeExerciseArray(raw: unknown, kind: Exercise["kind"]): Exercise[] {
+  return Array.isArray(raw)
+    ? raw
         .map((e) => sanitizeExercise(e, kind))
         .filter((e): e is Exercise => e !== null)
     : [];
-  const emoji = typeof o.emoji === "string" && o.emoji.trim() ? o.emoji.slice(0, 8) : undefined;
+}
+
+function sanitizeEmoji(v: unknown): string | undefined {
+  return typeof v === "string" && v.trim() ? v.slice(0, 8) : undefined;
+}
+
+function sanitizeTemplate(raw: unknown): Template | null {
+  const o = asObject(raw);
+  if (!o) return null;
+  const type = sanitizeDayType(o.type) ?? "gym";
   return {
     id: str(o.id) || id("t"),
     name: str(o.name) || "sin nombre",
     type,
-    emoji,
-    exercises,
+    emoji: sanitizeEmoji(o.emoji),
+    exercises: sanitizeExerciseArray(o.exercises, exerciseKindForType(type)),
+  };
+}
+
+function sanitizeSnapshot(raw: unknown): DayPlanSnapshot | undefined {
+  const o = asObject(raw);
+  if (!o) return undefined;
+  const type = sanitizeDayType(o.type);
+  if (!type) return undefined;
+  return {
+    name: str(o.name) || "sin nombre",
+    type,
+    emoji: sanitizeEmoji(o.emoji),
+    exercises: sanitizeExerciseArray(o.exercises, exerciseKindForType(type)),
   };
 }
 
@@ -127,9 +152,46 @@ function sanitizeLogs(raw: unknown): Store["logs"] {
         if (Array.isArray(arr)) sets[exId] = arr.map(Boolean);
       }
     }
-    out[dateKey] = { templateId, sets, done: e.done === true ? true : undefined };
+    // Invariante: descanso puntual (templateId null) nunca lleva snapshot ni customized.
+    const snapshot = templateId ? sanitizeSnapshot(e.snapshot) : undefined;
+    out[dateKey] = {
+      templateId,
+      snapshot,
+      customized: snapshot && e.customized === true ? true : undefined,
+      sets,
+      done: e.done === true ? true : undefined,
+    };
   }
   return out;
+}
+
+function hasProgress(log: DayLog): boolean {
+  return log.done === true || Object.values(log.sets).some((a) => a.some(Boolean));
+}
+
+function snapshotFromTemplate(t: Template): DayPlanSnapshot {
+  return {
+    name: t.name,
+    type: t.type,
+    emoji: t.emoji,
+    exercises: t.exercises.map((e) => ({ ...e })),
+  };
+}
+
+/**
+ * Congela los días ya entrenados (con progreso) que aún siguen la plantilla en vivo,
+ * para que futuras ediciones de la plantilla no los alteren. Idempotente.
+ */
+function migrateLogs(templates: Template[], logs: Store["logs"]): Store["logs"] {
+  const byId = new Map(templates.map((t) => [t.id, t]));
+  let out: Store["logs"] | null = null;
+  for (const [iso, log] of Object.entries(logs)) {
+    if (log.snapshot || !log.templateId || !hasProgress(log)) continue;
+    const t = byId.get(log.templateId);
+    if (!t) continue;
+    (out ??= { ...logs })[iso] = { ...log, snapshot: snapshotFromTemplate(t) };
+  }
+  return out ?? logs;
 }
 
 function sanitizeStore(raw: unknown): Store {
@@ -153,7 +215,7 @@ function sanitizeStore(raw: unknown): Store {
     version: 2,
     templates,
     routine: { week },
-    logs: sanitizeLogs(o.logs),
+    logs: migrateLogs(templates, sanitizeLogs(o.logs)),
   };
 }
 
@@ -201,6 +263,60 @@ export type ExercisePatch = Partial<Omit<StrengthExercise, "kind" | "id">> &
   Partial<Omit<RunExercise, "kind" | "id">> &
   Partial<Omit<SwimExercise, "kind" | "id">>;
 
+/** Transformaciones puras sobre una lista de ejercicios (plantilla o día). */
+const exArray = {
+  add: (exs: Exercise[], kind: Exercise["kind"]): Exercise[] => [...exs, newExercise(kind)],
+  patch: (exs: Exercise[], exId: string, patch: ExercisePatch): Exercise[] =>
+    exs.map((e) => (e.id === exId ? ({ ...e, ...patch } as Exercise) : e)),
+  remove: (exs: Exercise[], exId: string): Exercise[] => exs.filter((e) => e.id !== exId),
+  move: (exs: Exercise[], exId: string, dir: -1 | 1): Exercise[] =>
+    move(exs, exs.findIndex((e) => e.id === exId), dir),
+};
+
+/** Plantilla enlazada a una fecha: la del log si existe, si no la de la semana. */
+function linkedTemplate(store: Store, iso: string): Template | null {
+  const log = store.logs[iso] ?? null;
+  const tid = log ? log.templateId : (store.routine.week[mondayIndex(parseIso(iso))] ?? null);
+  return tid ? (store.templates.find((t) => t.id === tid) ?? null) : null;
+}
+
+/**
+ * Garantiza que `logs[iso]` existe y tiene `snapshot` (copiado de la plantilla en vivo).
+ * No-op si ya está congelado o si no hay plantilla de la que copiar (descanso / borrada).
+ */
+function ensureFrozenDay(store: Store, iso: string): Store {
+  const log = store.logs[iso] ?? null;
+  if (log?.snapshot) return store;
+  const t = linkedTemplate(store, iso);
+  if (!t) return store;
+  const frozen: DayLog = {
+    templateId: t.id,
+    snapshot: snapshotFromTemplate(t),
+    sets: log?.sets ?? {},
+    done: log?.done,
+  };
+  return { ...store, logs: { ...store.logs, [iso]: frozen } };
+}
+
+/** Congela el día si hace falta y transforma sus ejercicios; lo marca `customized`. */
+function withDayExercises(
+  store: Store,
+  iso: string,
+  fn: (exs: Exercise[], type: DayType) => Exercise[],
+): Store {
+  const s = ensureFrozenDay(store, iso);
+  const log = s.logs[iso];
+  if (!log?.snapshot) return store;
+  const exercises = fn(log.snapshot.exercises, log.snapshot.type);
+  return {
+    ...s,
+    logs: {
+      ...s.logs,
+      [iso]: { ...log, snapshot: { ...log.snapshot, exercises }, customized: true },
+    },
+  };
+}
+
 // ------------------------------------------------------------- contexto
 
 interface StoreContextValue {
@@ -218,11 +334,18 @@ interface StoreContextValue {
 
   assignTemplate: (weekday: number, templateId: string | null) => void;
 
-  toggleSet: (iso: string, templateId: string, exId: string, setIndex: number) => void;
-  setDayDone: (iso: string, templateId: string, done: boolean) => void;
+  toggleSet: (iso: string, exId: string, setIndex: number) => void;
+  setDayDone: (iso: string, done: boolean) => void;
   overrideDay: (iso: string, templateId: string | null) => void;
   resetDay: (iso: string) => void;
   clearSets: (iso: string) => void;
+
+  // Editar los ejercicios de un solo día, sin tocar la plantilla.
+  addDayExercise: (iso: string) => void;
+  updateDayExercise: (iso: string, exId: string, patch: ExercisePatch) => void;
+  deleteDayExercise: (iso: string, exId: string) => void;
+  moveDayExercise: (iso: string, exId: string, dir: -1 | 1) => void;
+  resyncDayPlan: (iso: string) => void;
 
   loadExample: () => void;
   exportJson: () => string;
@@ -286,7 +409,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setStore((s) =>
       withTemplate(s, templateId, (t) => ({
         ...t,
-        exercises: [...t.exercises, newExercise(exerciseKindForType(t.type))],
+        exercises: exArray.add(t.exercises, exerciseKindForType(t.type)),
       })),
     );
   }, []);
@@ -296,9 +419,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setStore((s) =>
         withTemplate(s, templateId, (t) => ({
           ...t,
-          exercises: t.exercises.map((e) =>
-            e.id === exId ? ({ ...e, ...patch } as Exercise) : e,
-          ),
+          exercises: exArray.patch(t.exercises, exId, patch),
         })),
       );
     },
@@ -309,7 +430,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setStore((s) =>
       withTemplate(s, templateId, (t) => ({
         ...t,
-        exercises: t.exercises.filter((e) => e.id !== exId),
+        exercises: exArray.remove(t.exercises, exId),
       })),
     );
   }, []);
@@ -317,10 +438,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const moveExercise = useCallback(
     (templateId: string, exId: string, dir: -1 | 1) => {
       setStore((s) =>
-        withTemplate(s, templateId, (t) => {
-          const i = t.exercises.findIndex((e) => e.id === exId);
-          return { ...t, exercises: move(t.exercises, i, dir) };
-        }),
+        withTemplate(s, templateId, (t) => ({
+          ...t,
+          exercises: exArray.move(t.exercises, exId, dir),
+        })),
       );
     },
     [],
@@ -337,60 +458,57 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const toggleSet = useCallback(
-    (iso: string, templateId: string, exId: string, setIndex: number) => {
-      setStore((s) => {
-        const cur = s.logs[iso];
-        const arr = (cur?.sets[exId] ?? []).slice();
-        while (arr.length <= setIndex) arr.push(false);
-        arr[setIndex] = !arr[setIndex];
-        return {
-          ...s,
-          logs: {
-            ...s.logs,
-            [iso]: { templateId, sets: { ...(cur?.sets ?? {}), [exId]: arr } },
-          },
-        };
-      });
-    },
-    [],
-  );
+  const toggleSet = useCallback((iso: string, exId: string, setIndex: number) => {
+    setStore((s) => {
+      if (!resolveDay(s, parseIso(iso)).plan) return s; // descanso: nada que marcar
+      const s2 = ensureFrozenDay(s, iso); // el día queda fijado al tocarlo
+      const cur = s2.logs[iso];
+      const arr = (cur.sets[exId] ?? []).slice();
+      while (arr.length <= setIndex) arr.push(false);
+      arr[setIndex] = !arr[setIndex];
+      return {
+        ...s2,
+        logs: { ...s2.logs, [iso]: { ...cur, sets: { ...cur.sets, [exId]: arr } } },
+      };
+    });
+  }, []);
 
   /**
-   * Marca (o desmarca) un día como hecho a mano. Para plantillas sin ejercicios
-   * que marcar. Al desmarcar sin series registradas, borra el log (vuelve al plan).
+   * Marca (o desmarca) un día como hecho a mano. Se usa cuando el plan no tiene
+   * ejercicios que marcar. Al marcar, el día queda fijado.
    */
-  const setDayDone = useCallback((iso: string, templateId: string, done: boolean) => {
+  const setDayDone = useCallback((iso: string, done: boolean) => {
     setStore((s) => {
-      const cur = s.logs[iso];
       if (done) {
-        return {
-          ...s,
-          logs: {
-            ...s.logs,
-            [iso]: { templateId, sets: cur?.sets ?? {}, done: true },
-          },
+        const s2 = ensureFrozenDay(s, iso);
+        const cur = s2.logs[iso] ?? {
+          templateId: linkedTemplate(s, iso)?.id ?? null,
+          sets: {},
         };
+        return { ...s2, logs: { ...s2.logs, [iso]: { ...cur, done: true } } };
       }
+      const cur = s.logs[iso];
       if (!cur) return s;
       const logs = { ...s.logs };
       const hasSets = Object.values(cur.sets).some((arr) => arr.some(Boolean));
       const weekdayId = s.routine.week[mondayIndex(parseIso(iso))] ?? null;
       const isOverride = cur.templateId !== weekdayId;
-      // Sin nada más que guardar y sin cambio puntual: volver al plan de la semana.
-      if (hasSets || isOverride) logs[iso] = { ...cur, done: undefined };
+      // Sin nada más que guardar, sin cambio puntual y sin ejercicios propios: borrar el log.
+      if (hasSets || isOverride || cur.customized) logs[iso] = { ...cur, done: undefined };
       else delete logs[iso];
       return { ...s, logs };
     });
   }, []);
 
-  /** Cambia (o cancela con null) el entreno de una fecha concreta, sin tocar la semana. */
+  /**
+   * Cambia (o cancela con null) el entreno de una fecha concreta, sin tocar la semana.
+   * Descarta lo registrado y el snapshot: es un plan nuevo para ese día.
+   */
   const overrideDay = useCallback((iso: string, templateId: string | null) => {
-    setStore((s) => {
-      const cur = s.logs[iso];
-      const keepSets = cur && cur.templateId === templateId ? cur.sets : {};
-      return { ...s, logs: { ...s.logs, [iso]: { templateId, sets: keepSets } } };
-    });
+    setStore((s) => ({
+      ...s,
+      logs: { ...s.logs, [iso]: { templateId, sets: {} } },
+    }));
   }, []);
 
   /** Deja el día como el plan de la semana, sin nada marcado (borra el log). */
@@ -403,12 +521,57 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  /** Desmarca todas las series pero conserva el entreno (y el cambio puntual si lo hay). */
+  /** Desmarca todas las series pero conserva el entreno (snapshot y cambio puntual incluidos). */
   const clearSets = useCallback((iso: string) => {
     setStore((s) => {
       const cur = s.logs[iso];
       if (!cur) return s;
       return { ...s, logs: { ...s.logs, [iso]: { ...cur, sets: {} } } };
+    });
+  }, []);
+
+  // --- ejercicios de un solo día (no tocan la plantilla) ---
+
+  const addDayExercise = useCallback((iso: string) => {
+    setStore((s) =>
+      withDayExercises(s, iso, (exs, type) => exArray.add(exs, exerciseKindForType(type))),
+    );
+  }, []);
+
+  const updateDayExercise = useCallback(
+    (iso: string, exId: string, patch: ExercisePatch) => {
+      setStore((s) => withDayExercises(s, iso, (exs) => exArray.patch(exs, exId, patch)));
+    },
+    [],
+  );
+
+  const deleteDayExercise = useCallback((iso: string, exId: string) => {
+    setStore((s) => withDayExercises(s, iso, (exs) => exArray.remove(exs, exId)));
+  }, []);
+
+  const moveDayExercise = useCallback((iso: string, exId: string, dir: -1 | 1) => {
+    setStore((s) => withDayExercises(s, iso, (exs) => exArray.move(exs, exId, dir)));
+  }, []);
+
+  /** Descarta los ejercicios propios del día y vuelve a seguir la plantilla en vivo. */
+  const resyncDayPlan = useCallback((iso: string) => {
+    setStore((s) => {
+      const cur = s.logs[iso];
+      if (!cur?.snapshot) return s;
+      const t = cur.templateId
+        ? (s.templates.find((x) => x.id === cur.templateId) ?? null)
+        : null;
+      if (!t) return s; // plantilla borrada: se conserva el registro congelado
+      const liveIds = new Set(t.exercises.map((e) => e.id));
+      const sets: Record<string, boolean[]> = {};
+      for (const [k, v] of Object.entries(cur.sets)) if (liveIds.has(k)) sets[k] = v;
+      const weeklyId = s.routine.week[mondayIndex(parseIso(iso))] ?? null;
+      const empty =
+        cur.done !== true && !Object.values(sets).some((a) => a.some(Boolean));
+      const logs = { ...s.logs };
+      if (empty && cur.templateId === weeklyId) delete logs[iso];
+      else logs[iso] = { templateId: cur.templateId, sets, done: cur.done };
+      return { ...s, logs };
     });
   }, []);
 
@@ -454,6 +617,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       overrideDay,
       resetDay,
       clearSets,
+      addDayExercise,
+      updateDayExercise,
+      deleteDayExercise,
+      moveDayExercise,
+      resyncDayPlan,
       loadExample,
       exportJson,
       importJson,
@@ -476,6 +644,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       overrideDay,
       resetDay,
       clearSets,
+      addDayExercise,
+      updateDayExercise,
+      deleteDayExercise,
+      moveDayExercise,
+      resyncDayPlan,
       loadExample,
       exportJson,
       importJson,

@@ -68,17 +68,36 @@ export interface Routine {
   week: (string | null)[];
 }
 
+/**
+ * Copia congelada del plan de un día. Se hace la primera vez que se registra algo
+ * o se edita el día a mano, y sobrevive a ediciones y al borrado de la plantilla.
+ */
+export interface DayPlanSnapshot {
+  name: string;
+  type: DayType;
+  emoji?: string;
+  exercises: Exercise[];
+}
+
 /** Progreso / ajuste de una fecha concreta del calendario. */
 export interface DayLog {
   /**
-   * Plantilla usada ESA fecha. Puede diferir de la asignación semanal (cambio puntual).
-   * `null` = ese día se marcó como descanso desde la pantalla "hoy".
+   * Plantilla de la que salió este día (vínculo para "volver a la plantilla" y
+   * comparación con el plan de la semana). Puede diferir de la asignación semanal
+   * (cambio puntual). `null` = ese día se marcó como descanso desde la pantalla "hoy".
    */
   templateId: string | null;
+  /**
+   * Si existe, el día se muestra y se puntúa desde aquí y NO sigue la plantilla en vivo.
+   * Invariante: si `templateId === null` no hay snapshot ni `customized`.
+   */
+  snapshot?: DayPlanSnapshot;
+  /** El usuario editó a mano los ejercicios de este día (el snapshot ya no es la plantilla). */
+  customized?: boolean;
   /** exerciseId -> estado de cada serie (índice = nº de serie). */
   sets: Record<string, boolean[]>;
   /**
-   * Día marcado como hecho a mano. Solo se usa cuando la plantilla no tiene
+   * Día marcado como hecho a mano. Solo se usa cuando el plan no tiene
    * ejercicios que marcar; con ejercicios, el día se completa al marcarlos todos.
    */
   done?: boolean;

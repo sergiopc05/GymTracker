@@ -64,8 +64,8 @@ export function CalendarScreen({ onPickDate }: Props) {
         day,
         inMonth: true,
         isToday: isoDate(date) === isoDate(today),
-        type: resolved.template?.type ?? null,
-        emoji: resolved.template?.emoji ?? null,
+        type: resolved.plan?.type ?? null,
+        emoji: resolved.plan?.emoji ?? null,
         status,
       });
     }

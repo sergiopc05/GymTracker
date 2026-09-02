@@ -104,6 +104,9 @@ export function TemplatesScreen({ openId, setOpenId }: Props) {
               asignada a {assigned} día{assigned === 1 ? "" : "s"} de la semana
             </p>
           )}
+          <p className="dim">
+            editar no cambia los días que ya entrenaste; solo los días sin marcar.
+          </p>
         </section>
 
         <section className="card" data-type={open.type}>
