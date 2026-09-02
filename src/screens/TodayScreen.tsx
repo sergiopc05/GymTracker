@@ -13,6 +13,7 @@ import {
 } from "../lib/dates";
 import { currentStreak, dayProgress, resolveDay } from "../lib/progress";
 import {
+  DAY_TYPE_GLYPH,
   DAY_TYPE_LABEL,
   fmtExerciseName,
   fmtExerciseSpec,
@@ -77,9 +78,10 @@ export function TodayScreen({ goTo }: Props) {
           </button>
         </section>
       ) : (
-        <section className="card">
+        <section className="card" data-type={template.type}>
           <div className="prompt">
-            {DAY_TYPE_LABEL[template.type]}/{WEEKDAY_LONG[weekday].toLowerCase()} ▸ {template.name}
+            {DAY_TYPE_GLYPH[template.type]} {DAY_TYPE_LABEL[template.type]}/
+            {WEEKDAY_LONG[weekday].toLowerCase()} ▸ {template.name}
           </div>
 
           {!progress.hasPlan ? (

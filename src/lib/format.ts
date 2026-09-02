@@ -9,6 +9,14 @@ export const DAY_TYPE_LABEL: Record<DayType, string> = {
   swim: "natación",
 };
 
+/** Glifo corto por tipo de día, para marcar visualmente los bloques. */
+export const DAY_TYPE_GLYPH: Record<DayType, string> = {
+  gym: "#",
+  running: "»",
+  core: "*",
+  swim: "~",
+};
+
 export const RUN_MODALITY_LABEL: Record<RunModality, string> = {
   andar: "andar",
   trotar: "trotar",
@@ -56,6 +64,15 @@ export function fmtExerciseSpec(ex: Exercise): string {
 
   if (ex.kind === "run") {
     parts.push(RUN_MODALITY_LABEL[ex.modality]);
+
+    if (ex.modality === "fartlek") {
+      const effort = ex.effortMin != null ? fmtMinutes(ex.effortMin) : "?";
+      const recovery = ex.recoveryMin != null ? fmtMinutes(ex.recoveryMin) : "?";
+      parts.push(`${ex.sets}× (${effort} carrera / ${recovery} trote)`);
+      if (ex.note) parts.push(ex.note);
+      return parts.join(" · ");
+    }
+
     const chunk: string[] = [];
     if (ex.distanceM != null && ex.modality !== "andar") chunk.push(fmtDistance(ex.distanceM));
     if (ex.durationMin != null) chunk.push(fmtMinutes(ex.durationMin));

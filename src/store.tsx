@@ -69,6 +69,8 @@ function sanitizeExercise(raw: unknown, kind: Exercise["kind"]): Exercise | null
       sets,
       distanceM: numOrU(o.distanceM),
       durationMin: numOrU(o.durationMin),
+      effortMin: numOrU(o.effortMin),
+      recoveryMin: numOrU(o.recoveryMin),
       restSec: numOrU(o.restSec),
       note: o.note ? str(o.note) : undefined,
     };

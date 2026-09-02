@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useStore } from "../store";
 import { DAY_TYPES, exerciseKindForType, type DayType } from "../types";
-import { DAY_TYPE_LABEL, fmtExerciseCount } from "../lib/format";
+import { DAY_TYPE_GLYPH, DAY_TYPE_LABEL, fmtExerciseCount } from "../lib/format";
 import { ExerciseEditor } from "../components/ExerciseEditor";
 
 interface Props {
@@ -42,12 +42,12 @@ export function TemplatesScreen({ openId, setOpenId }: Props) {
   if (open) {
     const assigned = assignedCount(open.id);
     return (
-      <div className="screen">
+      <div className="screen" data-type={open.type}>
         <button type="button" className="linkbtn" onClick={() => setOpenId(null)}>
           &larr; plantillas
         </button>
 
-        <section className="card">
+        <section className="card" data-type={open.type}>
           <label className="f">
             <span className="f__label">nombre</span>
             <input
@@ -91,7 +91,7 @@ export function TemplatesScreen({ openId, setOpenId }: Props) {
           )}
         </section>
 
-        <section className="card">
+        <section className="card" data-type={open.type}>
           <h3 className="rule rule--sm">ejercicios</h3>
           {open.exercises.length === 0 && <p className="dim">sin ejercicios</p>}
           <ol className="exedlist">
@@ -147,8 +147,10 @@ export function TemplatesScreen({ openId, setOpenId }: Props) {
         const group = store.templates.filter((t) => t.type === type);
         if (group.length === 0) return null;
         return (
-          <section key={type} className="tplgroup">
-            <h3 className="rule rule--sm">{DAY_TYPE_LABEL[type]}</h3>
+          <section key={type} className="tplgroup" data-type={type}>
+            <h3 className="rule rule--sm">
+              {DAY_TYPE_GLYPH[type]} {DAY_TYPE_LABEL[type]}
+            </h3>
             <div className="tpllist">
               {group.map((t) => {
                 const a = assignedCount(t.id);

@@ -37,6 +37,8 @@ function run(
   opts: {
     distanceM?: number;
     durationMin?: number;
+    effortMin?: number;
+    recoveryMin?: number;
     restSec?: number;
     note?: string;
   } = {},
@@ -101,6 +103,12 @@ export function exampleData(): Store {
     run("andar", 1, { distanceM: 1500, note: "enfriamiento" }),
   ]);
 
+  const fartlek = tpl("Fartlek", "running", [
+    run("trotar", 1, { distanceM: 2000, durationMin: 12, note: "calentamiento" }),
+    run("fartlek", 8, { effortMin: 1, recoveryMin: 2 }),
+    run("trotar", 1, { distanceM: 2000, note: "enfriamiento" }),
+  ]);
+
   const piscina = tpl("Piscina técnica", "swim", [
     swim("Calentamiento", 1, 400),
     swim("Técnica de crol", 8, 50, { restSec: 20, durationSec: 60 }),
@@ -108,7 +116,7 @@ export function exampleData(): Store {
     swim("Suave a elección", 1, 200),
   ]);
 
-  const templates = [empuje, tiron, pierna, core, rodaje, series, piscina];
+  const templates = [empuje, tiron, pierna, core, rodaje, series, fartlek, piscina];
 
   return {
     version: 2,

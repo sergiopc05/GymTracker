@@ -36,6 +36,29 @@
   }
 }
 
+/* color por tipo de día: se hereda vía var(--type) en todo lo que lleve [data-type] */
+[data-type="gym"] {
+  --type: var(--accent);
+}
+[data-type="running"] {
+  --type: #4aa8ff;
+}
+[data-type="core"] {
+  --type: var(--amber);
+}
+[data-type="swim"] {
+  --type: #c08bff;
+}
+
+@media (prefers-color-scheme: light) {
+  [data-type="running"] {
+    --type: #1e6fd0;
+  }
+  [data-type="swim"] {
+    --type: #7c3aed;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -165,6 +188,10 @@ h4 {
   gap: 12px;
 }
 
+.card[data-type] {
+  border-top: 2px solid var(--type);
+}
+
 .rule {
   display: flex;
   align-items: center;
@@ -208,7 +235,7 @@ h4 {
 }
 
 .prompt {
-  color: var(--accent);
+  color: var(--type, var(--accent));
   font-size: 13px;
   word-break: break-word;
 }
@@ -216,6 +243,18 @@ h4 {
 .prompt::before {
   content: "$ ";
   color: var(--dim);
+}
+
+/* etiqueta de tipo: "» running" con el color del tipo */
+.type-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 5px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  font-size: 11px;
+  color: var(--type, var(--accent));
 }
 
 /* ------------------------------------------------------------ botones */
@@ -380,8 +419,8 @@ textarea:focus {
 }
 
 .exrow.is-done {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-color: color-mix(in srgb, var(--type, var(--accent)) 45%, var(--border));
+  background: color-mix(in srgb, var(--type, var(--accent)) 8%, transparent);
 }
 
 .exrow__head {
@@ -423,8 +462,8 @@ textarea:focus {
 }
 
 .setbox.is-done {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--type, var(--accent));
+  border-color: var(--type, var(--accent));
   color: var(--ink);
 }
 
@@ -437,14 +476,14 @@ textarea:focus {
 }
 
 .asciibar__track {
-  color: var(--accent);
+  color: var(--type, var(--accent));
   letter-spacing: 0.5px;
   white-space: nowrap;
   overflow-x: auto;
 }
 
 .asciibar.is-complete .asciibar__count {
-  color: var(--accent);
+  color: var(--type, var(--accent));
   font-weight: 700;
 }
 
@@ -458,11 +497,12 @@ textarea:focus {
 
 .weekrow {
   border: 1px solid var(--border);
+  border-left: 3px solid var(--type, var(--border));
   border-radius: var(--radius);
 }
 
 .weekrow.is-today {
-  border-color: var(--accent);
+  border-color: var(--type, var(--accent));
 }
 
 .weekrow__head {
@@ -498,6 +538,9 @@ textarea:focus {
 }
 
 .weekrow__sub {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 12px;
   color: var(--dim);
 }
@@ -561,6 +604,7 @@ textarea:focus {
   padding: 12px;
   background: var(--panel);
   border: 1px solid var(--border);
+  border-left: 3px solid var(--type, var(--border));
   border-radius: var(--radius);
   color: inherit;
   font: inherit;
@@ -569,7 +613,11 @@ textarea:focus {
 
 .tplrow:hover,
 .tplrow:active {
-  border-color: var(--accent);
+  border-color: var(--type, var(--accent));
+}
+
+.tplgroup > .rule {
+  color: var(--type, var(--accent));
 }
 
 .tplrow__name {

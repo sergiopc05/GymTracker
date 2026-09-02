@@ -29,8 +29,12 @@ export interface RunExercise {
   sets: number;
   /** Metros. No aplica a "andar". */
   distanceM?: number;
-  /** Minutos. "andar" solo usa esto. */
+  /** Minutos. "andar" solo usa esto. No se usa en "fartlek". */
   durationMin?: number;
+  /** Fartlek: minutos de carrera (parte fuerte) por repetición. */
+  effortMin?: number;
+  /** Fartlek: minutos de trote (recuperación) por repetición. */
+  recoveryMin?: number;
   restSec?: number;
   note?: string;
 }

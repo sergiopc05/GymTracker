@@ -137,41 +137,62 @@ export function ExerciseEditor({
                 />
               </Field>
             </div>
-            <div className="frow">
-              {ex.modality !== "andar" && (
-                <Field label="distancia m">
+            {ex.modality === "fartlek" ? (
+              <div className="frow">
+                <Field label="carrera min">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={ex.effortMin ?? ""}
+                    onChange={(e) => onPatch({ effortMin: numOrU(e.target.value) })}
+                  />
+                </Field>
+                <Field label="trote min">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={ex.recoveryMin ?? ""}
+                    onChange={(e) => onPatch({ recoveryMin: numOrU(e.target.value) })}
+                  />
+                </Field>
+              </div>
+            ) : (
+              <div className="frow">
+                {ex.modality !== "andar" && (
+                  <Field label="distancia m">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={ex.distanceM ?? ""}
+                      onChange={(e) => onPatch({ distanceM: numOrU(e.target.value) })}
+                    />
+                  </Field>
+                )}
+                <Field label="duración min">
                   <input
                     type="number"
                     inputMode="numeric"
-                    value={ex.distanceM ?? ""}
-                    onChange={(e) => onPatch({ distanceM: numOrU(e.target.value) })}
+                    value={ex.durationMin ?? ""}
+                    onChange={(e) => onPatch({ durationMin: numOrU(e.target.value) })}
                   />
                 </Field>
-              )}
-              <Field label="duración min">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  value={ex.durationMin ?? ""}
-                  onChange={(e) => onPatch({ durationMin: numOrU(e.target.value) })}
-                />
-              </Field>
-              {ex.sets > 1 && (
-                <Field label="descanso s">
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    value={ex.restSec ?? ""}
-                    onChange={(e) => onPatch({ restSec: numOrU(e.target.value) })}
-                  />
-                </Field>
-              )}
-            </div>
+                {ex.sets > 1 && (
+                  <Field label="descanso s">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={ex.restSec ?? ""}
+                      onChange={(e) => onPatch({ restSec: numOrU(e.target.value) })}
+                    />
+                  </Field>
+                )}
+              </div>
+            )}
             <Field label="nota">
               <input
                 type="text"
                 value={ex.note ?? ""}
-                placeholder="calentamiento, 1' fuerte / 2' suave…"
+                placeholder="calentamiento, cuestas, progresivo…"
                 onChange={(e) => onPatch({ note: e.target.value || undefined })}
               />
             </Field>

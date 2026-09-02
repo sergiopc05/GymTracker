@@ -3,6 +3,7 @@ import { useStore } from "../store";
 import { WEEKDAY_LONG, mondayIndex, startOfToday } from "../lib/dates";
 import { DAY_TYPES } from "../types";
 import {
+  DAY_TYPE_GLYPH,
   DAY_TYPE_LABEL,
   fmtExerciseCount,
   fmtExerciseName,
@@ -39,6 +40,7 @@ export function WeekScreen({ onEditTemplate }: Props) {
           return (
             <div
               key={weekday}
+              data-type={tpl?.type}
               className={
                 "weekrow" + (isToday ? " is-today" : "") + (isOpen ? " is-open" : "")
               }
@@ -57,11 +59,14 @@ export function WeekScreen({ onEditTemplate }: Props) {
                     <>
                       <span className="weekrow__name">{tpl.name}</span>
                       <span className="weekrow__sub">
-                        [{DAY_TYPE_LABEL[tpl.type]}] {fmtExerciseCount(tpl.exercises.length)}
+                        <span className="type-tag">
+                          {DAY_TYPE_GLYPH[tpl.type]} {DAY_TYPE_LABEL[tpl.type]}
+                        </span>{" "}
+                        {fmtExerciseCount(tpl.exercises.length)}
                       </span>
                     </>
                   ) : (
-                    <span className="weekrow__sub">descanso</span>
+                    <span className="weekrow__sub">— descanso —</span>
                   )}
                 </span>
               </button>
