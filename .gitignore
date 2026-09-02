@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+
+# Iconos generados por scripts/generate-icons.mjs (se regeneran en cada build)
+public/pwa-192.png
+public/pwa-512.png
+public/pwa-maskable-512.png
+public/apple-touch-icon.png
+public/favicon.ico
+
+# Editores
+.vscode/*
+!.vscode/extensions.json
+.idea
