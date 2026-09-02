@@ -53,8 +53,10 @@ export function CalendarScreen({ onPickDate }: Props) {
       const p = dayProgress(resolved);
       const past = isoDate(date) < isoDate(today);
       let status: Status;
-      if (!p.hasPlan) status = "rest";
-      else if (p.complete) status = "done";
+      if (p.rest) {
+        // descanso: "done" solo si tenía algo (caminar) y se completó
+        status = p.totalExercises > 0 && p.doneExercises === p.totalExercises ? "done" : "rest";
+      } else if (p.complete) status = "done";
       else if (p.doneSets > 0) status = "partial";
       else status = past ? "missed" : "planned";
       out.push({
@@ -154,11 +156,13 @@ export function CalendarScreen({ onPickDate }: Props) {
             >
               <span className="cal__num">{c.day}</span>
               <span className="cal__mark">
-                {c.status === "missed"
-                  ? "×"
-                  : c.status === "done" && !c.emoji
-                    ? "✓"
-                    : (c.emoji ?? "")}
+                {c.emoji
+                  ? c.emoji
+                  : c.status === "missed"
+                    ? "×"
+                    : c.status === "done"
+                      ? "✓"
+                      : ""}
               </span>
             </button>
           ) : (
@@ -168,7 +172,7 @@ export function CalendarScreen({ onPickDate }: Props) {
       </div>
 
       <p className="dim cal__legend">
-        fondo lleno = hecho · fondo tenue = a medias · × = sin hacer
+        fondo lleno = hecho · fondo tenue = a medias · nº apagado = sin hacer
       </p>
       <p className="prompt">
         {formatMonth(month).toLowerCase()} — hecho {stats.done} · pendiente{" "}

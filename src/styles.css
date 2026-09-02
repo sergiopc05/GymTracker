@@ -49,6 +49,9 @@
 [data-type="swim"] {
   --type: #c08bff;
 }
+[data-type="rest"] {
+  --type: var(--dim);
+}
 
 @media (prefers-color-scheme: light) {
   [data-type="running"] {
@@ -342,13 +345,28 @@ h4 {
   flex: 1;
 }
 
-.f--emoji {
-  flex: none;
-  width: 66px;
+.emojigrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
 }
 
-.f--emoji input {
-  text-align: center;
+.emojigrid__opt {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--dim);
+}
+
+.emojigrid__opt.is-sel {
+  border-color: var(--type, var(--accent));
+  background: color-mix(in srgb, var(--type, var(--accent)) 18%, var(--panel-2));
 }
 
 .frow > .btn {
@@ -784,8 +802,12 @@ textarea:focus {
   line-height: 1;
 }
 
-.cal__cell.is-missed .cal__num {
-  color: var(--dim);
+.cal__cell.is-missed {
+  opacity: 0.5;
+}
+
+.cal__cell.is-rest {
+  opacity: 0.8;
 }
 
 .cal__mark {

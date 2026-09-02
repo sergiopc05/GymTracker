@@ -1,8 +1,8 @@
 // Modelo de datos de GymTracker v2. Todo vive en localStorage; no hay servidor.
 
-export type DayType = "gym" | "running" | "core" | "swim";
+export type DayType = "gym" | "running" | "core" | "swim" | "rest";
 
-export const DAY_TYPES: DayType[] = ["gym", "running", "core", "swim"];
+export const DAY_TYPES: DayType[] = ["gym", "running", "core", "swim", "rest"];
 
 /** Ejercicio de fuerza: gym y core. */
 export interface StrengthExercise {
@@ -91,6 +91,7 @@ export interface Store {
 export function exerciseKindForType(type: DayType): Exercise["kind"] {
   switch (type) {
     case "running":
+    case "rest": // descanso activo: caminar / trotar suave
       return "run";
     case "swim":
       return "swim";

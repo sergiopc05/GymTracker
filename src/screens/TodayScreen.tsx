@@ -132,9 +132,13 @@ export function TodayScreen({ date, setDate, goTo }: Props) {
           </div>
         )}
 
-        {template && progress.hasPlan && (
+        {template && template.exercises.length > 0 && (
           <>
-            <AsciiBar done={progress.doneSets} total={progress.totalSets} label="series" />
+            <AsciiBar
+              done={progress.doneSets}
+              total={progress.totalSets}
+              label={progress.rest ? "opcional" : "series"}
+            />
 
             <ol className="exlist">
               {template.exercises.map((ex) => {
@@ -157,7 +161,14 @@ export function TodayScreen({ date, setDate, goTo }: Props) {
               })}
             </ol>
 
-            {progress.complete && <p className="ok">$ día completado ✔</p>}
+            {!progress.rest && progress.complete && (
+              <p className="ok">$ día completado ✔</p>
+            )}
+            {progress.rest &&
+              progress.totalExercises > 0 &&
+              progress.doneExercises === progress.totalExercises && (
+                <p className="ok">$ descanso activo hecho ✔</p>
+              )}
             {streak > 0 && (
               <p className="dim">
                 racha: {streak} día{streak === 1 ? "" : "s"}
@@ -178,13 +189,17 @@ export function TodayScreen({ date, setDate, goTo }: Props) {
           </>
         )}
 
-        {template && !progress.hasPlan && (
+        {template && template.exercises.length === 0 && template.type !== "rest" && (
           <>
             <p className="dim">La plantilla «{template.name}» no tiene ejercicios.</p>
             <button type="button" className="linkbtn" onClick={() => goTo("plantillas")}>
               editar plantilla &rarr;
             </button>
           </>
+        )}
+
+        {template && template.exercises.length === 0 && template.type === "rest" && (
+          <p className="dim">Día de descanso. 🌙</p>
         )}
 
         {!template && (

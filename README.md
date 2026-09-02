@@ -4,7 +4,8 @@ PWA con estética de terminal para llevar tu semana de entrenamiento e ir marcan
 serie que completas.
 
 - **Plantillas reutilizables** con nombre, que asignas a cada día de la semana.
-- **4 tipos de día**: gym, running, core y natación (uno por día, o descanso).
+- **5 tipos de día**: gym, running, core, natación y descanso (uno por día). El de descanso
+  puede ir vacío o llevar una caminata opcional que marcar.
 - **Ejercicios con detalle según el tipo**:
   - _gym / core_: series, repeticiones, peso, descanso entre series.
   - _running_: modalidad (andar / trotar / fartlek / carrera), distancia, tiempo, intervalos.
@@ -94,7 +95,7 @@ src/
   lib/dates.ts               Utilidades de fecha
   lib/progress.ts            Progreso por serie, racha, resolución del día
   lib/format.ts              Formateo de fichas de ejercicio (4×8 · 60 kg · r90")
-  components/                TabBar, SetBoxes, AsciiBar, ExerciseEditor
+  components/                TabBar, SetBoxes, AsciiBar, ExerciseEditor, EmojiPicker
   screens/                   TodayScreen, CalendarScreen, WeekScreen, TemplatesScreen, SettingsScreen
 ```
 

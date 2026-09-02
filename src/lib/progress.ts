@@ -51,34 +51,31 @@ export interface DayProgress {
 
 export function dayProgress(resolved: ResolvedDay): DayProgress {
   const { template, log } = resolved;
-  if (!template) {
-    return {
-      doneSets: 0,
-      totalSets: 0,
-      doneExercises: 0,
-      totalExercises: 0,
-      complete: true,
-      hasPlan: false,
-      rest: true,
-    };
-  }
+  const rest = !template || template.type === "rest";
+
   let doneSets = 0;
   let totalSets = 0;
   let doneExercises = 0;
-  for (const ex of template.exercises) {
-    totalSets += ex.sets;
-    doneSets += setsDone(ex, log);
-    if (exerciseComplete(ex, log)) doneExercises++;
+  if (template) {
+    for (const ex of template.exercises) {
+      totalSets += ex.sets;
+      doneSets += setsDone(ex, log);
+      if (exerciseComplete(ex, log)) doneExercises++;
+    }
   }
-  const totalExercises = template.exercises.length;
+  const totalExercises = template?.exercises.length ?? 0;
+  const allDone = totalExercises === 0 ? true : doneExercises === totalExercises;
+
   return {
     doneSets,
     totalSets,
     doneExercises,
     totalExercises,
-    complete: totalExercises === 0 ? true : doneExercises === totalExercises,
-    hasPlan: totalExercises > 0,
-    rest: false,
+    // Un día de descanso siempre está "cubierto"; los ejercicios (p.ej. caminar)
+    // son opcionales y no cuentan para la racha.
+    complete: rest ? true : allDone,
+    hasPlan: rest ? false : totalExercises > 0,
+    rest,
   };
 }
 

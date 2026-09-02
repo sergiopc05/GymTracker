@@ -121,7 +121,21 @@ export function exampleData(): Store {
     swim("Suave a elección", 1, 200),
   ]);
 
-  const templates = [empuje, tiron, pierna, core, rodaje, series, fartlek, piscina];
+  const descanso = tpl("🚶", "Descanso activo", "rest", [
+    run("andar", 1, { durationMin: 30, note: "paseo tranquilo" }),
+  ]);
+
+  const templates = [
+    empuje,
+    tiron,
+    pierna,
+    core,
+    rodaje,
+    series,
+    fartlek,
+    piscina,
+    descanso,
+  ];
 
   return {
     version: 2,

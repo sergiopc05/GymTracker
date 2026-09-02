@@ -12,6 +12,7 @@ export const DAY_TYPE_LABEL: Record<DayType, string> = {
   running: "running",
   core: "core",
   swim: "natación",
+  rest: "descanso",
 };
 
 /** Glifo corto por tipo de día, para marcar visualmente los bloques. */
@@ -20,6 +21,7 @@ export const DAY_TYPE_GLYPH: Record<DayType, string> = {
   running: "»",
   core: "*",
   swim: "~",
+  rest: "-",
 };
 
 export const RUN_MODALITY_LABEL: Record<RunModality, string> = {

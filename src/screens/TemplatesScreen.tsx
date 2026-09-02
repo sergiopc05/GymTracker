@@ -8,6 +8,7 @@ import {
   tplLabel,
 } from "../lib/format";
 import { ExerciseEditor } from "../components/ExerciseEditor";
+import { EmojiPicker } from "../components/EmojiPicker";
 
 interface Props {
   openId: string | null;
@@ -54,25 +55,21 @@ export function TemplatesScreen({ openId, setOpenId }: Props) {
         </button>
 
         <section className="card" data-type={open.type}>
-          <div className="frow">
-            <label className="f f--emoji">
-              <span className="f__label">emoji</span>
-              <input
-                type="text"
-                inputMode="text"
-                value={open.emoji ?? ""}
-                placeholder="🏋️"
-                onChange={(e) => setTemplateEmoji(open.id, e.target.value)}
-              />
-            </label>
-            <label className="f">
-              <span className="f__label">nombre</span>
-              <input
-                type="text"
-                value={open.name}
-                onChange={(e) => renameTemplate(open.id, e.target.value)}
-              />
-            </label>
+          <label className="f">
+            <span className="f__label">nombre</span>
+            <input
+              type="text"
+              value={open.name}
+              onChange={(e) => renameTemplate(open.id, e.target.value)}
+            />
+          </label>
+
+          <div className="f">
+            <span className="f__label">emoji</span>
+            <EmojiPicker
+              value={open.emoji}
+              onChange={(e) => setTemplateEmoji(open.id, e)}
+            />
           </div>
 
           <label className="f">
