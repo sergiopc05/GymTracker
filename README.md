@@ -20,7 +20,8 @@ y carreras que vas completando cada día.
 
 ## Desarrollo local
 
-Requiere Node 18.17+ (probado con 18.17.1).
+Requiere **Node 22 LTS** (mínimo 20.19; Vite 8 no funciona en Node 18).
+En Windows: `winget install OpenJS.NodeJS.LTS` o descárgalo de <https://nodejs.org>.
 
 ```bash
 npm install
@@ -90,8 +91,8 @@ src/
   screens/                   TodayScreen, WeekScreen, EditScreen, SettingsScreen
 ```
 
-## Nota técnica
+## Stack
 
-`package.json` fija `overrides.workbox-build = 7.1.0` porque las versiones más nuevas de
-`workbox-build` (que arrastra `vite-plugin-pwa`) requieren Node 20+. Con Node 20 puedes
-quitar ese override si quieres.
+Vite 8 · React 18 · TypeScript · vite-plugin-pwa 1.3 (Workbox). Sin dependencias en runtime
+más allá de React. Los iconos se generan en `prebuild`/`predev` con un script propio
+(`node:zlib`, cero dependencias).
