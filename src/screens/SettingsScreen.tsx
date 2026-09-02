@@ -2,15 +2,16 @@ import { useRef, useState } from "react";
 import { useStore } from "../store";
 import { isoDate } from "../lib/dates";
 
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "2.0.0";
 
 export function SettingsScreen() {
-  const { store, exportJson, importJson, clearAll } = useStore();
+  const { store, loadExample, exportJson, importJson, clearAll } = useStore();
   const fileRef = useRef<HTMLInputElement>(null);
   const [pasted, setPasted] = useState("");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
   const dayCount = Object.keys(store.logs).length;
+  const tplCount = store.templates.length;
 
   function downloadBackup() {
     const blob = new Blob([exportJson()], { type: "application/json" });
@@ -27,16 +28,16 @@ export function SettingsScreen() {
   async function copyBackup() {
     try {
       await navigator.clipboard.writeText(exportJson());
-      setMsg({ kind: "ok", text: "Copiado al portapapeles." });
+      setMsg({ kind: "ok", text: "copiado al portapapeles" });
     } catch {
-      setMsg({ kind: "err", text: "No se pudo copiar. Usa «Descargar»." });
+      setMsg({ kind: "err", text: "no se pudo copiar; usa «descargar»" });
     }
   }
 
   function runImport(text: string) {
     const result = importJson(text);
     if (result.ok) {
-      setMsg({ kind: "ok", text: "Datos importados correctamente." });
+      setMsg({ kind: "ok", text: "datos importados" });
       setPasted("");
     } else {
       setMsg({ kind: "err", text: result.error });
@@ -48,40 +49,54 @@ export function SettingsScreen() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => runImport(String(reader.result ?? ""));
-    reader.onerror = () => setMsg({ kind: "err", text: "No se pudo leer el archivo." });
+    reader.onerror = () => setMsg({ kind: "err", text: "no se pudo leer el archivo" });
     reader.readAsText(file);
     e.target.value = "";
   }
 
   return (
     <div className="screen">
-      <h2 className="screen__title">Ajustes</h2>
+      <h2 className="rule">ajustes</h2>
 
-      <section className="editcard">
-        <h3 className="group__title">Copia de seguridad</h3>
-        <p className="muted">
-          Los datos se guardan solo en este dispositivo. Exporta de vez en cuando para no
-          perderlos si borras el historial de Safari.
+      <section className="card">
+        <h3 className="rule rule--sm">rutina de ejemplo</h3>
+        <p className="dim">
+          Carga plantillas de los 4 tipos y una semana montada, para ver cómo funciona.
+          Sustituye lo que tengas ahora.
+        </p>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => {
+            if (confirm("¿Cargar la rutina de ejemplo? Sustituye plantillas y semana."))
+              loadExample();
+          }}
+        >
+          [ cargar ejemplo ]
+        </button>
+      </section>
+
+      <section className="card">
+        <h3 className="rule rule--sm">copia de seguridad</h3>
+        <p className="dim">
+          Todo se guarda solo en este dispositivo. Exporta de vez en cuando para no perder
+          plantillas ni historial si borras los datos de Safari.
         </p>
         <div className="btn-stack">
-          <button type="button" className="ghostbtn" onClick={downloadBackup}>
-            Descargar copia (.json)
+          <button type="button" className="btn" onClick={downloadBackup}>
+            [ descargar .json ]
           </button>
-          <button type="button" className="ghostbtn" onClick={copyBackup}>
-            Copiar copia al portapapeles
+          <button type="button" className="btn" onClick={copyBackup}>
+            [ copiar al portapapeles ]
           </button>
         </div>
       </section>
 
-      <section className="editcard">
-        <h3 className="group__title">Importar</h3>
+      <section className="card">
+        <h3 className="rule rule--sm">importar</h3>
         <div className="btn-stack">
-          <button
-            type="button"
-            className="ghostbtn"
-            onClick={() => fileRef.current?.click()}
-          >
-            Elegir archivo .json
+          <button type="button" className="btn" onClick={() => fileRef.current?.click()}>
+            [ elegir archivo .json ]
           </button>
           <input
             ref={fileRef}
@@ -99,67 +114,63 @@ export function SettingsScreen() {
           />
           <button
             type="button"
-            className="ghostbtn"
+            className="btn"
             disabled={!pasted.trim()}
             onClick={() => {
-              if (confirm("¿Importar estos datos? Sustituirá tu rutina y tu historial."))
+              if (confirm("¿Importar? Sustituye plantillas, semana e historial."))
                 runImport(pasted);
             }}
           >
-            Importar texto pegado
+            [ importar texto pegado ]
           </button>
         </div>
       </section>
 
       {msg && (
         <p className={msg.kind === "ok" ? "flash flash--ok" : "flash flash--err"}>
+          {msg.kind === "ok" ? "$ " : "! "}
           {msg.text}
         </p>
       )}
 
-      <section className="editcard">
-        <h3 className="group__title">Instalar en el iPhone</h3>
+      <section className="card">
+        <h3 className="rule rule--sm">instalar en el iPhone</h3>
         <ol className="steps">
-          <li>Abre esta página en Safari.</li>
+          <li>abre esta página en Safari</li>
           <li>
-            Pulsa el botón <strong>Compartir</strong> (el cuadrado con la flecha hacia
-            arriba).
+            botón <strong>compartir</strong> (cuadrado con flecha arriba)
           </li>
           <li>
-            Elige <strong>Añadir a pantalla de inicio</strong>.
+            <strong>añadir a pantalla de inicio</strong>
           </li>
-          <li>
-            Ábrela desde el icono nuevo. Ya funciona sin conexión: puedes activar el modo
-            avión para comprobarlo.
-          </li>
+          <li>ábrela desde el icono; ya funciona sin conexión (modo avión incluido)</li>
         </ol>
       </section>
 
-      <section className="editcard">
-        <h3 className="group__title">Datos</h3>
-        <p className="muted">
-          {dayCount === 0
-            ? "Aún no has registrado ningún día."
-            : `Tienes ${dayCount} día${dayCount === 1 ? "" : "s"} con registro.`}
+      <section className="card">
+        <h3 className="rule rule--sm">datos</h3>
+        <p className="dim">
+          {tplCount} plantilla{tplCount === 1 ? "" : "s"} · {dayCount} día
+          {dayCount === 1 ? "" : "s"} con registro
         </p>
         <button
           type="button"
-          className="ghostbtn danger"
+          className="btn danger"
           onClick={() => {
             if (
-              confirm("¿Borrar la rutina y TODO el historial?") &&
-              confirm("¿Seguro? Esta acción no se puede deshacer.")
+              confirm("¿Borrar plantillas, semana y TODO el historial?") &&
+              confirm("¿Seguro? No se puede deshacer.")
             ) {
               clearAll();
-              setMsg({ kind: "ok", text: "Todo borrado." });
+              setMsg({ kind: "ok", text: "todo borrado" });
             }
           }}
         >
-          Borrar todos los datos
+          [ borrar todos los datos ]
         </button>
       </section>
 
-      <p className="version">GymTracker v{APP_VERSION} · funciona sin conexión</p>
+      <p className="version">gymtracker v{APP_VERSION} — offline</p>
     </div>
   );
 }

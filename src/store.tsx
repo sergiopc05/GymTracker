@@ -7,17 +7,22 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { DayLog, DayPlan, Routine, Store } from "./types";
-import { emptyRoutine, exampleRoutine } from "./defaultRoutine";
+import type {
+  DayType,
+  Exercise,
+  RunExercise,
+  StrengthExercise,
+  SwimExercise,
+  Store,
+  Template,
+} from "./types";
+import { DAY_TYPES, RUN_MODALITIES, exerciseKindForType } from "./types";
+import { emptyStore, exampleData } from "./defaultData";
 import { id } from "./lib/id";
 
-const KEY = "gymtracker:v1";
+const KEY = "gymtracker:v2";
 
-// ------------------------------------------------------------- carga / validacion
-
-function freshStore(): Store {
-  return { version: 1, routine: emptyRoutine(), logs: {} };
-}
+// ------------------------------------------------------------- helpers de validación
 
 function asObject(v: unknown): Record<string, unknown> | null {
   return v && typeof v === "object" && !Array.isArray(v)
@@ -25,99 +30,132 @@ function asObject(v: unknown): Record<string, unknown> | null {
     : null;
 }
 
-function sanitizeRoutine(raw: unknown): Routine {
-  const base = emptyRoutine();
-  const obj = asObject(raw);
-  const days = obj && Array.isArray(obj.days) ? obj.days : null;
-  if (!days) return base;
-
-  for (let w = 0; w < 7; w++) {
-    const d = asObject(days[w]);
-    if (!d) continue;
-    const gym = Array.isArray(d.gym) ? d.gym : [];
-    const runs = Array.isArray(d.runs) ? d.runs : [];
-    base.days[w] = {
-      weekday: w,
-      title: typeof d.title === "string" ? d.title : "",
-      rest: Boolean(d.rest),
-      gym: gym
-        .map(asObject)
-        .filter(
-          (e): e is Record<string, unknown> =>
-            !!e && typeof e.id === "string" && typeof e.name === "string",
-        )
-        .map((e) => ({ id: e.id as string, name: e.name as string })),
-      runs: runs
-        .map(asObject)
-        .filter(
-          (e): e is Record<string, unknown> =>
-            !!e && typeof e.id === "string" && typeof e.label === "string",
-        )
-        .map((e) => ({ id: e.id as string, label: e.label as string })),
-    };
-  }
-  return base;
+function str(v: unknown): string {
+  return typeof v === "string" ? v : "";
 }
 
-function sanitizeLogs(raw: unknown): Record<string, DayLog> {
-  const out: Record<string, DayLog> = {};
-  const obj = asObject(raw);
-  if (!obj) return out;
+function numOrU(v: unknown): number | undefined {
+  return typeof v === "number" && Number.isFinite(v) ? v : undefined;
+}
 
-  for (const [dateKey, value] of Object.entries(obj)) {
+function clampInt(v: unknown, fallback: number, min: number, max: number): number {
+  const n = typeof v === "number" && Number.isFinite(v) ? Math.round(v) : fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
+function sanitizeExercise(raw: unknown, kind: Exercise["kind"]): Exercise | null {
+  const o = asObject(raw);
+  if (!o) return null;
+  const exId = str(o.id) || id("e");
+  const sets = clampInt(o.sets, 1, 1, 99);
+
+  if (kind === "strength") {
+    return {
+      kind: "strength",
+      id: exId,
+      name: str(o.name),
+      sets,
+      reps: str(o.reps) || "10",
+      weightKg: numOrU(o.weightKg),
+      restSec: numOrU(o.restSec),
+    };
+  }
+  if (kind === "run") {
+    const m = str(o.modality) as RunExercise["modality"];
+    return {
+      kind: "run",
+      id: exId,
+      modality: RUN_MODALITIES.includes(m) ? m : "trotar",
+      sets,
+      distanceM: numOrU(o.distanceM),
+      durationMin: numOrU(o.durationMin),
+      restSec: numOrU(o.restSec),
+      note: o.note ? str(o.note) : undefined,
+    };
+  }
+  return {
+    kind: "swim",
+    id: exId,
+    name: o.name ? str(o.name) : undefined,
+    sets,
+    distanceM: numOrU(o.distanceM) ?? 100,
+    restSec: numOrU(o.restSec),
+    durationSec: numOrU(o.durationSec),
+  };
+}
+
+function sanitizeTemplate(raw: unknown): Template | null {
+  const o = asObject(raw);
+  if (!o) return null;
+  const t = str(o.type) as DayType;
+  const type: DayType = DAY_TYPES.includes(t) ? t : "gym";
+  const kind = exerciseKindForType(type);
+  const exercises = Array.isArray(o.exercises)
+    ? o.exercises
+        .map((e) => sanitizeExercise(e, kind))
+        .filter((e): e is Exercise => e !== null)
+    : [];
+  return { id: str(o.id) || id("t"), name: str(o.name) || "sin nombre", type, exercises };
+}
+
+function sanitizeLogs(raw: unknown): Store["logs"] {
+  const out: Store["logs"] = {};
+  const o = asObject(raw);
+  if (!o) return out;
+  for (const [dateKey, value] of Object.entries(o)) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) continue;
-    const entry = asObject(value);
-    if (!entry) continue;
-    const gym: Record<string, boolean> = {};
-    const runs: Record<string, boolean> = {};
-    const rawGym = asObject(entry.gym);
-    const rawRuns = asObject(entry.runs);
-    if (rawGym) for (const [k, v] of Object.entries(rawGym)) if (v === true) gym[k] = true;
-    if (rawRuns) for (const [k, v] of Object.entries(rawRuns)) if (v === true) runs[k] = true;
-    out[dateKey] = { gym, runs };
+    const e = asObject(value);
+    if (!e) continue;
+    const templateId = str(e.templateId);
+    if (!templateId) continue;
+    const sets: Record<string, boolean[]> = {};
+    const rawSets = asObject(e.sets);
+    if (rawSets) {
+      for (const [exId, arr] of Object.entries(rawSets)) {
+        if (Array.isArray(arr)) sets[exId] = arr.map(Boolean);
+      }
+    }
+    out[dateKey] = { templateId, sets };
   }
   return out;
 }
 
 function sanitizeStore(raw: unknown): Store {
-  const obj = asObject(raw);
+  const o = asObject(raw);
+  if (!o || o.version !== 2) return emptyStore();
+
+  const templates = Array.isArray(o.templates)
+    ? o.templates
+        .map(sanitizeTemplate)
+        .filter((t): t is Template => t !== null)
+    : [];
+  const ids = new Set(templates.map((t) => t.id));
+
+  const rawWeek = asObject(o.routine)?.week;
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const v = Array.isArray(rawWeek) ? rawWeek[i] : null;
+    return typeof v === "string" && ids.has(v) ? v : null;
+  });
+
   return {
-    version: 1,
-    routine: sanitizeRoutine(obj?.routine),
-    logs: sanitizeLogs(obj?.logs),
+    version: 2,
+    templates,
+    routine: { week },
+    logs: sanitizeLogs(o.logs),
   };
 }
 
 function loadStore(): Store {
   try {
     const txt = localStorage.getItem(KEY);
-    if (!txt) return freshStore();
+    if (!txt) return emptyStore();
     return sanitizeStore(JSON.parse(txt) as unknown);
   } catch {
-    return freshStore();
+    return emptyStore();
   }
 }
 
 // ------------------------------------------------------------- helpers inmutables
-
-function updateDay(
-  store: Store,
-  weekday: number,
-  fn: (day: DayPlan) => DayPlan,
-): Store {
-  return {
-    ...store,
-    routine: {
-      days: store.routine.days.map((d, i) => (i === weekday ? fn(d) : d)),
-    },
-  };
-}
-
-function updateLog(store: Store, iso: string, fn: (log: DayLog) => DayLog): Store {
-  const current = store.logs[iso] ?? { gym: {}, runs: {} };
-  const next = fn({ gym: { ...current.gym }, runs: { ...current.runs } });
-  return { ...store, logs: { ...store.logs, [iso]: next } };
-}
 
 function move<T>(arr: T[], index: number, dir: -1 | 1): T[] {
   const j = index + dir;
@@ -129,28 +167,48 @@ function move<T>(arr: T[], index: number, dir: -1 | 1): T[] {
   return copy;
 }
 
+function withTemplate(
+  store: Store,
+  templateId: string,
+  fn: (t: Template) => Template,
+): Store {
+  return {
+    ...store,
+    templates: store.templates.map((t) => (t.id === templateId ? fn(t) : t)),
+  };
+}
+
+function newExercise(kind: Exercise["kind"]): Exercise {
+  if (kind === "run") return { kind: "run", id: id("e"), modality: "trotar", sets: 1 };
+  if (kind === "swim")
+    return { kind: "swim", id: id("e"), name: "", sets: 1, distanceM: 100 };
+  return { kind: "strength", id: id("e"), name: "", sets: 3, reps: "10" };
+}
+
+export type ExercisePatch = Partial<Omit<StrengthExercise, "kind" | "id">> &
+  Partial<Omit<RunExercise, "kind" | "id">> &
+  Partial<Omit<SwimExercise, "kind" | "id">>;
+
 // ------------------------------------------------------------- contexto
 
 interface StoreContextValue {
   store: Store;
 
-  setDayTitle: (weekday: number, title: string) => void;
-  setRest: (weekday: number, rest: boolean) => void;
-  addExercise: (weekday: number, name: string) => void;
-  renameExercise: (weekday: number, exId: string, name: string) => void;
-  deleteExercise: (weekday: number, exId: string) => void;
-  moveExercise: (weekday: number, exId: string, dir: -1 | 1) => void;
-  addRun: (weekday: number, label: string) => void;
-  renameRun: (weekday: number, runId: string, label: string) => void;
-  deleteRun: (weekday: number, runId: string) => void;
-  moveRun: (weekday: number, runId: string, dir: -1 | 1) => void;
-  loadExample: () => void;
-  clearRoutine: () => void;
+  createTemplate: (name: string, type: DayType) => string;
+  renameTemplate: (templateId: string, name: string) => void;
+  setTemplateType: (templateId: string, type: DayType) => void;
+  deleteTemplate: (templateId: string) => void;
+  addExercise: (templateId: string) => void;
+  updateExercise: (templateId: string, exId: string, patch: ExercisePatch) => void;
+  deleteExercise: (templateId: string, exId: string) => void;
+  moveExercise: (templateId: string, exId: string, dir: -1 | 1) => void;
 
-  toggleGym: (iso: string, exId: string) => void;
-  toggleRun: (iso: string, runId: string) => void;
+  assignTemplate: (weekday: number, templateId: string | null) => void;
+
+  toggleSet: (iso: string, templateId: string, exId: string, setIndex: number) => void;
   resetDay: (iso: string) => void;
 
+  loadExample: () => void;
   exportJson: () => string;
   importJson: (text: string) => { ok: true } | { ok: false; error: string };
   clearAll: () => void;
@@ -165,129 +223,118 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem(KEY, JSON.stringify(store));
     } catch {
-      // Almacenamiento lleno o bloqueado: la sesión sigue funcionando en memoria.
+      // Almacenamiento lleno o bloqueado: la sesión sigue en memoria.
     }
   }, [store]);
 
-  const setDayTitle = useCallback((weekday: number, title: string) => {
-    setStore((s) => updateDay(s, weekday, (d) => ({ ...d, title })));
+  const createTemplate = useCallback((name: string, type: DayType) => {
+    const tId = id("t");
+    setStore((s) => ({
+      ...s,
+      templates: [
+        ...s.templates,
+        { id: tId, name: name.trim() || "sin nombre", type, exercises: [] },
+      ],
+    }));
+    return tId;
   }, []);
 
-  const setRest = useCallback((weekday: number, rest: boolean) => {
-    setStore((s) => updateDay(s, weekday, (d) => ({ ...d, rest })));
+  const renameTemplate = useCallback((templateId: string, name: string) => {
+    setStore((s) => withTemplate(s, templateId, (t) => ({ ...t, name })));
   }, []);
 
-  const addExercise = useCallback((weekday: number, name: string) => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
+  const setTemplateType = useCallback((templateId: string, type: DayType) => {
     setStore((s) =>
-      updateDay(s, weekday, (d) => ({
-        ...d,
-        rest: false,
-        gym: [...d.gym, { id: id("e"), name: trimmed }],
+      withTemplate(s, templateId, (t) => {
+        if (t.type === type) return t;
+        const keep = exerciseKindForType(t.type) === exerciseKindForType(type);
+        return { ...t, type, exercises: keep ? t.exercises : [] };
+      }),
+    );
+  }, []);
+
+  const deleteTemplate = useCallback((templateId: string) => {
+    setStore((s) => ({
+      ...s,
+      templates: s.templates.filter((t) => t.id !== templateId),
+      routine: { week: s.routine.week.map((w) => (w === templateId ? null : w)) },
+    }));
+  }, []);
+
+  const addExercise = useCallback((templateId: string) => {
+    setStore((s) =>
+      withTemplate(s, templateId, (t) => ({
+        ...t,
+        exercises: [...t.exercises, newExercise(exerciseKindForType(t.type))],
       })),
     );
   }, []);
 
-  const renameExercise = useCallback(
-    (weekday: number, exId: string, name: string) => {
+  const updateExercise = useCallback(
+    (templateId: string, exId: string, patch: ExercisePatch) => {
       setStore((s) =>
-        updateDay(s, weekday, (d) => ({
-          ...d,
-          gym: d.gym.map((e) => (e.id === exId ? { ...e, name } : e)),
+        withTemplate(s, templateId, (t) => ({
+          ...t,
+          exercises: t.exercises.map((e) =>
+            e.id === exId ? ({ ...e, ...patch } as Exercise) : e,
+          ),
         })),
       );
     },
     [],
   );
 
-  const deleteExercise = useCallback((weekday: number, exId: string) => {
+  const deleteExercise = useCallback((templateId: string, exId: string) => {
     setStore((s) =>
-      updateDay(s, weekday, (d) => ({
-        ...d,
-        gym: d.gym.filter((e) => e.id !== exId),
+      withTemplate(s, templateId, (t) => ({
+        ...t,
+        exercises: t.exercises.filter((e) => e.id !== exId),
       })),
     );
   }, []);
 
   const moveExercise = useCallback(
-    (weekday: number, exId: string, dir: -1 | 1) => {
+    (templateId: string, exId: string, dir: -1 | 1) => {
       setStore((s) =>
-        updateDay(s, weekday, (d) => {
-          const i = d.gym.findIndex((e) => e.id === exId);
-          return { ...d, gym: move(d.gym, i, dir) };
+        withTemplate(s, templateId, (t) => {
+          const i = t.exercises.findIndex((e) => e.id === exId);
+          return { ...t, exercises: move(t.exercises, i, dir) };
         }),
       );
     },
     [],
   );
 
-  const addRun = useCallback((weekday: number, label: string) => {
-    const trimmed = label.trim();
-    if (!trimmed) return;
-    setStore((s) =>
-      updateDay(s, weekday, (d) => ({
-        ...d,
-        rest: false,
-        runs: [...d.runs, { id: id("r"), label: trimmed }],
-      })),
-    );
-  }, []);
+  const assignTemplate = useCallback(
+    (weekday: number, templateId: string | null) => {
+      setStore((s) => {
+        const week = s.routine.week.slice();
+        week[weekday] = templateId;
+        return { ...s, routine: { week } };
+      });
+    },
+    [],
+  );
 
-  const renameRun = useCallback((weekday: number, runId: string, label: string) => {
-    setStore((s) =>
-      updateDay(s, weekday, (d) => ({
-        ...d,
-        runs: d.runs.map((r) => (r.id === runId ? { ...r, label } : r)),
-      })),
-    );
-  }, []);
-
-  const deleteRun = useCallback((weekday: number, runId: string) => {
-    setStore((s) =>
-      updateDay(s, weekday, (d) => ({
-        ...d,
-        runs: d.runs.filter((r) => r.id !== runId),
-      })),
-    );
-  }, []);
-
-  const moveRun = useCallback((weekday: number, runId: string, dir: -1 | 1) => {
-    setStore((s) =>
-      updateDay(s, weekday, (d) => {
-        const i = d.runs.findIndex((r) => r.id === runId);
-        return { ...d, runs: move(d.runs, i, dir) };
-      }),
-    );
-  }, []);
-
-  const loadExample = useCallback(() => {
-    setStore((s) => ({ ...s, routine: exampleRoutine() }));
-  }, []);
-
-  const clearRoutine = useCallback(() => {
-    setStore((s) => ({ ...s, routine: emptyRoutine() }));
-  }, []);
-
-  const toggleGym = useCallback((iso: string, exId: string) => {
-    setStore((s) =>
-      updateLog(s, iso, (log) => {
-        if (log.gym[exId]) delete log.gym[exId];
-        else log.gym[exId] = true;
-        return log;
-      }),
-    );
-  }, []);
-
-  const toggleRun = useCallback((iso: string, runId: string) => {
-    setStore((s) =>
-      updateLog(s, iso, (log) => {
-        if (log.runs[runId]) delete log.runs[runId];
-        else log.runs[runId] = true;
-        return log;
-      }),
-    );
-  }, []);
+  const toggleSet = useCallback(
+    (iso: string, templateId: string, exId: string, setIndex: number) => {
+      setStore((s) => {
+        const cur = s.logs[iso];
+        const tId = cur?.templateId || templateId;
+        const arr = (cur?.sets[exId] ?? []).slice();
+        while (arr.length <= setIndex) arr.push(false);
+        arr[setIndex] = !arr[setIndex];
+        return {
+          ...s,
+          logs: {
+            ...s.logs,
+            [iso]: { templateId: tId, sets: { ...(cur?.sets ?? {}), [exId]: arr } },
+          },
+        };
+      });
+    },
+    [],
+  );
 
   const resetDay = useCallback((iso: string) => {
     setStore((s) => {
@@ -297,6 +344,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return { ...s, logs };
     });
   }, []);
+
+  const loadExample = useCallback(() => setStore(exampleData()), []);
 
   const exportJson = useCallback(() => JSON.stringify(store, null, 2), [store]);
 
@@ -308,9 +357,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       } catch {
         return { ok: false, error: "El texto no es un JSON válido." };
       }
-      const obj = asObject(parsed);
-      if (!obj || !("routine" in obj)) {
-        return { ok: false, error: "No parece una copia de seguridad de GymTracker." };
+      const o = asObject(parsed);
+      if (!o || o.version !== 2) {
+        return { ok: false, error: "No parece una copia de seguridad de GymTracker v2." };
       }
       setStore(sanitizeStore(parsed));
       return { ok: true };
@@ -318,47 +367,41 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const clearAll = useCallback(() => setStore(freshStore()), []);
+  const clearAll = useCallback(() => setStore(emptyStore()), []);
 
   const value = useMemo<StoreContextValue>(
     () => ({
       store,
-      setDayTitle,
-      setRest,
+      createTemplate,
+      renameTemplate,
+      setTemplateType,
+      deleteTemplate,
       addExercise,
-      renameExercise,
+      updateExercise,
       deleteExercise,
       moveExercise,
-      addRun,
-      renameRun,
-      deleteRun,
-      moveRun,
-      loadExample,
-      clearRoutine,
-      toggleGym,
-      toggleRun,
+      assignTemplate,
+      toggleSet,
       resetDay,
+      loadExample,
       exportJson,
       importJson,
       clearAll,
     }),
     [
       store,
-      setDayTitle,
-      setRest,
+      createTemplate,
+      renameTemplate,
+      setTemplateType,
+      deleteTemplate,
       addExercise,
-      renameExercise,
+      updateExercise,
       deleteExercise,
       moveExercise,
-      addRun,
-      renameRun,
-      deleteRun,
-      moveRun,
-      loadExample,
-      clearRoutine,
-      toggleGym,
-      toggleRun,
+      assignTemplate,
+      toggleSet,
       resetDay,
+      loadExample,
       exportJson,
       importJson,
       clearAll,

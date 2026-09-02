@@ -95,10 +95,10 @@ function encodeIco(pngBuffer, size) {
 
 // ---------------------------------------------------------------- dibujo
 
-const BG_TOP = [0x17, 0x1e, 0x2b];
-const BG_BOTTOM = [0x0d, 0x10, 0x16];
-const ACCENT = [0x5b, 0x9c, 0xff]; // azul suave para las pesas
-const BAR = [0xf2, 0xf5, 0xfa]; // barra clara
+const BG_TOP = [0x11, 0x15, 0x13];
+const BG_BOTTOM = [0x07, 0x09, 0x08];
+const ACCENT = [0x46, 0xd1, 0x7f]; // verde terminal
+const BAR = ACCENT;
 
 function lerp(a, b, t) {
   return Math.round(a + (b - a) * t);
@@ -150,32 +150,45 @@ function makeCanvas(size, { transparentBg = false } = {}) {
     }
   }
 
-  // Dibuja una mancuerna horizontal centrada. `scale` reduce el tamano (maskable).
-  function drawDumbbell(scale = 1) {
-    const cx = 0.5;
-    const half = 0.34 * scale; // media longitud total
-    const barH = 0.085 * scale;
-    const innerW = 0.075 * scale;
-    const innerH = 0.30 * scale;
-    const outerW = 0.06 * scale;
-    const outerH = 0.42 * scale;
-    const rad = 0.03 * scale;
+  // Pinta un pixel normalizado si cae dentro del canvas.
+  function plot(nx, ny, color) {
+    const x = Math.round(nx * size);
+    const y = Math.round(ny * size);
+    if (x < 0 || x >= size || y < 0 || y >= size) return;
+    const i = (y * size + x) * 4;
+    px[i] = color[0];
+    px[i + 1] = color[1];
+    px[i + 2] = color[2];
+    px[i + 3] = 255;
+  }
 
-    // barra central
-    fillRect(cx - half + outerW, 0.5 - barH / 2, (half - outerW) * 2, barH, BAR, barH / 2);
+  // Dibuja un prompt de terminal:  >_   `scale` encoge para el icono maskable.
+  function drawPrompt(scale = 1) {
+    const s = scale;
+    const cy = 0.5;
+    const yTop = cy - 0.22 * s;
+    const yBot = cy + 0.22 * s;
+    const xBase = 0.5 - 0.2 * s; // extremos del chevron
+    const xApex = 0.5 + 0.12 * s; // punta del chevron
+    const thick = 0.115 * s;
+    const step = 0.4 / size;
 
-    // discos interiores
-    fillRect(cx - half + outerW, 0.5 - innerH / 2, innerW, innerH, ACCENT, rad);
-    fillRect(cx + half - outerW - innerW, 0.5 - innerH / 2, innerW, innerH, ACCENT, rad);
+    // chevron ">" como una banda horizontal que sigue una V girada
+    for (let y = yTop; y <= yBot; y += step) {
+      const p = 1 - Math.abs(y - cy) / (0.22 * s); // 0 en los extremos, 1 en la punta
+      const cxg = xBase + (xApex - xBase) * p;
+      for (let dx = -thick / 2; dx <= thick / 2; dx += step) {
+        plot(cxg + dx, y, ACCENT);
+      }
+    }
 
-    // discos exteriores
-    fillRect(cx - half, 0.5 - outerH / 2, outerW, outerH, ACCENT, rad);
-    fillRect(cx + half - outerW, 0.5 - outerH / 2, outerW, outerH, ACCENT, rad);
+    // cursor "_" a la derecha
+    fillRect(0.5 + 0.03 * s, cy + 0.13 * s, 0.24 * s, 0.06 * s, BAR, 0);
   }
 
   return {
     px,
-    drawDumbbell,
+    drawPrompt,
     png: () => encodePng(size, size, px),
   };
 }
@@ -191,28 +204,28 @@ console.log("Generando iconos en public/ ...");
 
 for (const size of [192, 512]) {
   const c = makeCanvas(size);
-  c.drawDumbbell(1);
+  c.drawPrompt(1);
   write(`pwa-${size}.png`, c.png());
 }
 
-// maskable: fondo a sangre + mancuerna dentro de la zona segura
+// maskable: fondo a sangre + glifo dentro de la zona segura
 {
   const c = makeCanvas(512);
-  c.drawDumbbell(0.72);
+  c.drawPrompt(0.72);
   write("pwa-maskable-512.png", c.png());
 }
 
 // apple-touch-icon: 180x180, sin transparencia (iOS recorta las esquinas)
 {
   const c = makeCanvas(180);
-  c.drawDumbbell(1);
+  c.drawPrompt(1);
   write("apple-touch-icon.png", c.png());
 }
 
 // favicon.ico con un PNG de 32x32 embebido
 {
   const c = makeCanvas(32);
-  c.drawDumbbell(1);
+  c.drawPrompt(1);
   write("favicon.ico", encodeIco(c.png(), 32));
 }
 

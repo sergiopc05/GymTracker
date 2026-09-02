@@ -1,22 +1,27 @@
 # GymTracker
 
-PWA para llevar el horario semanal de **gimnasio y running** e ir marcando los ejercicios
-y carreras que vas completando cada día.
+PWA con estética de terminal para llevar tu semana de entrenamiento e ir marcando cada
+serie que completas.
 
-- **Funciona sin conexión.** Después de la primera carga no vuelve a necesitar internet
-  (modo avión incluido). No hay servidor: todos los datos se guardan solo en tu dispositivo.
+- **Plantillas reutilizables** con nombre, que asignas a cada día de la semana.
+- **4 tipos de día**: gym, running, core y natación (uno por día, o descanso).
+- **Ejercicios con detalle según el tipo**:
+  - _gym / core_: series, repeticiones, peso, descanso entre series.
+  - _running_: modalidad (andar / trotar / fartlek / carrera), distancia, tiempo, intervalos.
+  - _natación_: series × distancia, descanso, tiempo por serie.
+- **Registro por serie**: marcas cada `[ ]` → `[x]`; el ejercicio se cierra al completarlas.
+- **Funciona sin conexión.** Tras la primera carga no vuelve a necesitar internet (modo
+  avión incluido). No hay servidor: los datos se guardan solo en tu dispositivo.
 - **Instalable en el iPhone** desde Safari → _Añadir a pantalla de inicio_.
-- Rutina **editable desde la app**: días, ejercicios y carreras.
-- Seguimiento simple con **casillas** + barra de progreso y racha de días.
 
 ## Pantallas
 
-| Pantalla    | Para qué                                                                  |
-| ----------- | ------------------------------------------------------------------------- |
-| **Hoy**     | Lo que toca hoy; marcas ejercicios/carreras. Flechas para ver otros días. |
-| **Semana**  | Vista de los 7 días con lo planificado en cada uno.                      |
-| **Editar**  | Defines el entreno de cada día: título, descanso, ejercicios, carreras.  |
-| **Ajustes** | Copia de seguridad (exportar/importar), instalar, borrar datos.          |
+| Pantalla        | Para qué                                                                     |
+| --------------- | -------------------------------------------------------------------------- |
+| **hoy**         | La plantilla asignada a hoy; marcas serie a serie. Flechas para otros días. |
+| **semana**      | Los 7 días con su plantilla; asignar plantilla o abrir su editor.           |
+| **plantillas**  | Biblioteca: crear/editar plantillas (nombre, tipo, ejercicios).             |
+| **ajustes**     | Rutina de ejemplo, copia de seguridad (exportar/importar), instalar, borrar. |
 
 ## Desarrollo local
 
@@ -73,22 +78,23 @@ dominio (no en un subdirectorio), compila con `GH_PAGES_BASE=/ npm run build`.
 
 ## Copia de seguridad
 
-Los datos viven en `localStorage`. Si borras los datos de sitios web de Safari, se pierden.
-En **Ajustes** puedes descargar/copiar un `.json` con toda tu rutina e historial, y volver a
-importarlo.
+Los datos viven en `localStorage` (clave `gymtracker:v2`). Si borras los datos de sitios web
+de Safari, se pierden. En **ajustes** puedes descargar/copiar un `.json` con plantillas,
+semana e historial, y volver a importarlo.
 
 ## Estructura
 
 ```
 scripts/generate-icons.mjs   Genera los PNG del icono sin dependencias (node:zlib)
 src/
-  types.ts                   Modelo de datos
+  types.ts                   Modelo de datos (plantillas, tipos de día, ejercicios)
   store.tsx                  Estado global + persistencia en localStorage
-  defaultRoutine.ts          Rutina vacía + rutina de ejemplo
+  defaultData.ts             Store vacío + rutina de ejemplo
   lib/dates.ts               Utilidades de fecha
-  lib/progress.ts            Cálculo de progreso y racha
-  components/                TabBar, CheckRow, ProgressBar
-  screens/                   TodayScreen, WeekScreen, EditScreen, SettingsScreen
+  lib/progress.ts            Progreso por serie, racha, resolución del día
+  lib/format.ts              Formateo de fichas de ejercicio (4×8 · 60 kg · r90")
+  components/                TabBar, SetBoxes, AsciiBar, ExerciseEditor
+  screens/                   TodayScreen, WeekScreen, TemplatesScreen, SettingsScreen
 ```
 
 ## Stack
