@@ -1,7 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { useStore } from "../store";
 import { DAY_TYPES, exerciseKindForType, type DayType } from "../types";
-import { DAY_TYPE_GLYPH, DAY_TYPE_LABEL, fmtExerciseCount } from "../lib/format";
+import {
+  DAY_TYPE_GLYPH,
+  DAY_TYPE_LABEL,
+  fmtExerciseCount,
+  tplLabel,
+} from "../lib/format";
 import { ExerciseEditor } from "../components/ExerciseEditor";
 
 interface Props {
@@ -14,6 +19,7 @@ export function TemplatesScreen({ openId, setOpenId }: Props) {
     store,
     createTemplate,
     renameTemplate,
+    setTemplateEmoji,
     setTemplateType,
     deleteTemplate,
     addExercise,
@@ -48,14 +54,26 @@ export function TemplatesScreen({ openId, setOpenId }: Props) {
         </button>
 
         <section className="card" data-type={open.type}>
-          <label className="f">
-            <span className="f__label">nombre</span>
-            <input
-              type="text"
-              value={open.name}
-              onChange={(e) => renameTemplate(open.id, e.target.value)}
-            />
-          </label>
+          <div className="frow">
+            <label className="f f--emoji">
+              <span className="f__label">emoji</span>
+              <input
+                type="text"
+                inputMode="text"
+                value={open.emoji ?? ""}
+                placeholder="🏋️"
+                onChange={(e) => setTemplateEmoji(open.id, e.target.value)}
+              />
+            </label>
+            <label className="f">
+              <span className="f__label">nombre</span>
+              <input
+                type="text"
+                value={open.name}
+                onChange={(e) => renameTemplate(open.id, e.target.value)}
+              />
+            </label>
+          </div>
 
           <label className="f">
             <span className="f__label">tipo</span>
@@ -161,7 +179,7 @@ export function TemplatesScreen({ openId, setOpenId }: Props) {
                     className="tplrow"
                     onClick={() => setOpenId(t.id)}
                   >
-                    <span className="tplrow__name">{t.name}</span>
+                    <span className="tplrow__name">{tplLabel(t)}</span>
                     <span className="tplrow__sub">
                       {fmtExerciseCount(t.exercises.length)}
                       {a > 0 ? ` · ${a}×semana` : ""}

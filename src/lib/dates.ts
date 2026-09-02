@@ -42,6 +42,22 @@ export function startOfToday(): Date {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
+export function startOfMonth(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+export function addMonths(d: Date, n: number): Date {
+  return new Date(d.getFullYear(), d.getMonth() + n, 1);
+}
+
+export function daysInMonth(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+}
+
+export function sameMonth(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+}
+
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -65,4 +81,14 @@ const shortFormatter = new Intl.DateTimeFormat("es-ES", {
 /** "2 sept" — compacto para listas. */
 export function formatShortDate(d: Date): string {
   return shortFormatter.format(d);
+}
+
+const monthFormatter = new Intl.DateTimeFormat("es-ES", {
+  month: "long",
+  year: "numeric",
+});
+
+/** "Septiembre 2026" */
+export function formatMonth(d: Date): string {
+  return capitalize(monthFormatter.format(d).replace(" de ", " "));
 }

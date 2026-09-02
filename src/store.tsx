@@ -97,7 +97,14 @@ function sanitizeTemplate(raw: unknown): Template | null {
         .map((e) => sanitizeExercise(e, kind))
         .filter((e): e is Exercise => e !== null)
     : [];
-  return { id: str(o.id) || id("t"), name: str(o.name) || "sin nombre", type, exercises };
+  const emoji = typeof o.emoji === "string" && o.emoji.trim() ? o.emoji.slice(0, 8) : undefined;
+  return {
+    id: str(o.id) || id("t"),
+    name: str(o.name) || "sin nombre",
+    type,
+    emoji,
+    exercises,
+  };
 }
 
 function sanitizeLogs(raw: unknown): Store["logs"] {
@@ -200,6 +207,7 @@ interface StoreContextValue {
 
   createTemplate: (name: string, type: DayType) => string;
   renameTemplate: (templateId: string, name: string) => void;
+  setTemplateEmoji: (templateId: string, emoji: string) => void;
   setTemplateType: (templateId: string, type: DayType) => void;
   deleteTemplate: (templateId: string) => void;
   addExercise: (templateId: string) => void;
@@ -247,6 +255,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const renameTemplate = useCallback((templateId: string, name: string) => {
     setStore((s) => withTemplate(s, templateId, (t) => ({ ...t, name })));
+  }, []);
+
+  const setTemplateEmoji = useCallback((templateId: string, emoji: string) => {
+    const clean = emoji.trim().slice(0, 8) || undefined;
+    setStore((s) => withTemplate(s, templateId, (t) => ({ ...t, emoji: clean })));
   }, []);
 
   const setTemplateType = useCallback((templateId: string, type: DayType) => {
@@ -398,6 +411,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       store,
       createTemplate,
       renameTemplate,
+      setTemplateEmoji,
       setTemplateType,
       deleteTemplate,
       addExercise,
@@ -418,6 +432,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       store,
       createTemplate,
       renameTemplate,
+      setTemplateEmoji,
       setTemplateType,
       deleteTemplate,
       addExercise,

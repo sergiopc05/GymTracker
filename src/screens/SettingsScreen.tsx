@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useStore } from "../store";
 import { isoDate } from "../lib/dates";
 
-const APP_VERSION = "2.0.0";
+const APP_VERSION = "2.1.0";
 
 export function SettingsScreen() {
   const { store, loadExample, exportJson, importJson, clearAll } = useStore();

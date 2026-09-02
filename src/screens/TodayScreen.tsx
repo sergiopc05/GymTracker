@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useStore } from "../store";
 import { SetBoxes } from "../components/SetBoxes";
 import { AsciiBar } from "../components/AsciiBar";
@@ -18,15 +17,17 @@ import {
   DAY_TYPE_LABEL,
   fmtExerciseName,
   fmtExerciseSpec,
+  tplLabel,
 } from "../lib/format";
 
 interface Props {
+  date: Date;
+  setDate: (updater: Date | ((d: Date) => Date)) => void;
   goTo: (tab: TabKey) => void;
 }
 
-export function TodayScreen({ goTo }: Props) {
+export function TodayScreen({ date, setDate, goTo }: Props) {
   const { store, toggleSet, overrideDay, resetDay, clearSets } = useStore();
-  const [date, setDate] = useState(startOfToday);
 
   const today = startOfToday();
   const isToday = isoDate(date) === isoDate(today);
@@ -95,7 +96,7 @@ export function TodayScreen({ goTo }: Props) {
       <section className="card" data-type={template?.type}>
         <div className="prompt">
           {template
-            ? `${DAY_TYPE_GLYPH[template.type]} ${DAY_TYPE_LABEL[template.type]}/${weekdayName} ▸ ${template.name}`
+            ? `${DAY_TYPE_GLYPH[template.type]} ${DAY_TYPE_LABEL[template.type]}/${weekdayName} ▸ ${tplLabel(template)}`
             : `descanso ▸ ${weekdayName}`}
         </div>
 
@@ -110,7 +111,7 @@ export function TodayScreen({ goTo }: Props) {
                 <optgroup key={type} label={DAY_TYPE_LABEL[type]}>
                   {group.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.name}
+                      {tplLabel(t)}
                     </option>
                   ))}
                 </optgroup>
@@ -123,7 +124,7 @@ export function TodayScreen({ goTo }: Props) {
           <div className="daynote">
             <span className="dim">
               cambio puntual · plan de la semana:{" "}
-              {weeklyTemplate ? weeklyTemplate.name : "descanso"}
+              {weeklyTemplate ? tplLabel(weeklyTemplate) : "descanso"}
             </span>
             <button type="button" className="linkbtn" onClick={() => resetDay(iso)}>
               restaurar plan de la semana

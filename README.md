@@ -18,9 +18,10 @@ serie que completas.
 
 | Pantalla        | Para qué                                                                     |
 | --------------- | -------------------------------------------------------------------------- |
-| **hoy**         | La plantilla asignada a hoy; marcas serie a serie. Flechas para otros días. |
+| **hoy**         | El entreno del día; marcas serie a serie. Flechas para otros días. Puedes cambiar o cancelar el entreno de una fecha concreta sin tocar la semana. |
+| **mes**         | Calendario mensual: color y emoji por tipo, fondo lleno = día hecho, `×` = sin hacer. Toca un día para abrirlo. |
 | **semana**      | Los 7 días con su plantilla; asignar plantilla o abrir su editor.           |
-| **plantillas**  | Biblioteca: crear/editar plantillas (nombre, tipo, ejercicios).             |
+| **plantillas**  | Biblioteca: crear/editar plantillas (emoji, nombre, tipo, ejercicios).      |
 | **ajustes**     | Rutina de ejemplo, copia de seguridad (exportar/importar), instalar, borrar. |
 
 ## Desarrollo local
@@ -94,7 +95,7 @@ src/
   lib/progress.ts            Progreso por serie, racha, resolución del día
   lib/format.ts              Formateo de fichas de ejercicio (4×8 · 60 kg · r90")
   components/                TabBar, SetBoxes, AsciiBar, ExerciseEditor
-  screens/                   TodayScreen, WeekScreen, TemplatesScreen, SettingsScreen
+  screens/                   TodayScreen, CalendarScreen, WeekScreen, TemplatesScreen, SettingsScreen
 ```
 
 ## Stack

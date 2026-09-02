@@ -57,6 +57,8 @@ export interface Template {
   id: string;
   name: string;
   type: DayType;
+  /** Emoji opcional para identificar la plantilla de un vistazo. */
+  emoji?: string;
   /** Homogéneo según `type`: strength para gym/core, run para running, swim para swim. */
   exercises: Exercise[];
 }

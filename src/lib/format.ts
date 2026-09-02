@@ -1,6 +1,11 @@
 // Formateo de fichas de ejercicio y unidades, con estética compacta de terminal.
 
-import type { DayType, Exercise, RunModality } from "../types";
+import type { DayType, Exercise, RunModality, Template } from "../types";
+
+/** Nombre de plantilla con su emoji delante, si tiene. */
+export function tplLabel(t: Template): string {
+  return t.emoji ? `${t.emoji} ${t.name}` : t.name;
+}
 
 export const DAY_TYPE_LABEL: Record<DayType, string> = {
   gym: "gym",

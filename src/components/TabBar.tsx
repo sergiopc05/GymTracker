@@ -1,11 +1,11 @@
-export type TabKey = "hoy" | "semana" | "plantillas" | "ajustes";
+export type TabKey = "hoy" | "mes" | "semana" | "plantillas" | "ajustes";
 
 interface Props {
   active: TabKey;
   onChange: (tab: TabKey) => void;
 }
 
-const ORDER: TabKey[] = ["hoy", "semana", "plantillas", "ajustes"];
+const ORDER: TabKey[] = ["hoy", "mes", "semana", "plantillas", "ajustes"];
 
 export function TabBar({ active, onChange }: Props) {
   return (

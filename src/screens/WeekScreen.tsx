@@ -8,6 +8,7 @@ import {
   fmtExerciseCount,
   fmtExerciseName,
   fmtExerciseSpec,
+  tplLabel,
 } from "../lib/format";
 
 interface Props {
@@ -57,7 +58,7 @@ export function WeekScreen({ onEditTemplate }: Props) {
                 <span className="weekrow__meta">
                   {tpl ? (
                     <>
-                      <span className="weekrow__name">{tpl.name}</span>
+                      <span className="weekrow__name">{tplLabel(tpl)}</span>
                       <span className="weekrow__sub">
                         <span className="type-tag">
                           {DAY_TYPE_GLYPH[tpl.type]} {DAY_TYPE_LABEL[tpl.type]}
@@ -103,7 +104,7 @@ export function WeekScreen({ onEditTemplate }: Props) {
                           <optgroup key={type} label={DAY_TYPE_LABEL[type]}>
                             {group.map((t) => (
                               <option key={t.id} value={t.id}>
-                                {t.name}
+                                {tplLabel(t)}
                               </option>
                             ))}
                           </optgroup>

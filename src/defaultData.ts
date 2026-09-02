@@ -55,13 +55,18 @@ function swim(
   return { kind: "swim", id: id("e"), name, sets, distanceM, ...opts };
 }
 
-function tpl(name: string, type: DayType, exercises: Template["exercises"]): Template {
-  return { id: id("t"), name, type, exercises };
+function tpl(
+  emoji: string,
+  name: string,
+  type: DayType,
+  exercises: Template["exercises"],
+): Template {
+  return { id: id("t"), name, type, emoji, exercises };
 }
 
 /** Rutina de ejemplo: una plantilla de cada estilo asignada a la semana. */
 export function exampleData(): Store {
-  const empuje = tpl("Empuje A", "gym", [
+  const empuje = tpl("🏋️", "Empuje A", "gym", [
     strength("Press banca", 4, "6", 80, 150),
     strength("Press militar mancuernas", 3, "8", 20, 90),
     strength("Fondos en paralelas", 3, "10", undefined, 90),
@@ -69,7 +74,7 @@ export function exampleData(): Store {
     strength("Extensión de tríceps en polea", 3, "12", undefined, 60),
   ]);
 
-  const tiron = tpl("Tirón A", "gym", [
+  const tiron = tpl("💪", "Tirón A", "gym", [
     strength("Dominadas", 4, "6", undefined, 150),
     strength("Remo con barra", 4, "8", 60, 120),
     strength("Jalón al pecho", 3, "10", undefined, 90),
@@ -77,7 +82,7 @@ export function exampleData(): Store {
     strength("Face pull", 3, "15", undefined, 60),
   ]);
 
-  const pierna = tpl("Pierna A", "gym", [
+  const pierna = tpl("🦵", "Pierna A", "gym", [
     strength("Sentadilla", 4, "6", 90, 180),
     strength("Peso muerto rumano", 3, "8", 70, 150),
     strength("Prensa", 3, "12", undefined, 90),
@@ -85,31 +90,31 @@ export function exampleData(): Store {
     strength("Gemelo de pie", 4, "15", undefined, 45),
   ]);
 
-  const core = tpl("Core corto", "core", [
+  const core = tpl("🧱", "Core corto", "core", [
     strength("Plancha", 3, "45 s", undefined, 30),
     strength("Hollow hold", 3, "30 s", undefined, 30),
     strength("Rueda abdominal", 3, "10", undefined, 45),
     strength("Elevación de piernas colgado", 3, "12", undefined, 45),
   ]);
 
-  const rodaje = tpl("Rodaje suave", "running", [
+  const rodaje = tpl("🏃", "Rodaje suave", "running", [
     run("trotar", 1, { distanceM: 5000, durationMin: 30 }),
     run("andar", 1, { durationMin: 10, note: "vuelta a la calma" }),
   ]);
 
-  const series = tpl("Series en pista", "running", [
+  const series = tpl("⏱️", "Series en pista", "running", [
     run("andar", 1, { distanceM: 1500, durationMin: 12, note: "calentamiento" }),
     run("carrera", 6, { distanceM: 400, restSec: 90 }),
     run("andar", 1, { distanceM: 1500, note: "enfriamiento" }),
   ]);
 
-  const fartlek = tpl("Fartlek", "running", [
+  const fartlek = tpl("⚡", "Fartlek", "running", [
     run("trotar", 1, { distanceM: 2000, durationMin: 12, note: "calentamiento" }),
     run("fartlek", 8, { effortMin: 1, recoveryMin: 2 }),
     run("trotar", 1, { distanceM: 2000, note: "enfriamiento" }),
   ]);
 
-  const piscina = tpl("Piscina técnica", "swim", [
+  const piscina = tpl("🏊", "Piscina técnica", "swim", [
     swim("Calentamiento", 1, 400),
     swim("Técnica de crol", 8, 50, { restSec: 20, durationSec: 60 }),
     swim("Crol continuo", 6, 100, { restSec: 30, durationSec: 110 }),
