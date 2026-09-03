@@ -13,7 +13,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      injectRegister: "auto",
+      // Registramos el SW a mano en main.tsx (registerSW) para que recargue
+      // la pagina al activar una version nueva; no inyectes otro registro.
+      injectRegister: false,
       includeAssets: ["favicon.ico", "apple-touch-icon.png"],
       manifest: {
         name: "GymTracker",
