@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useStore } from "../store";
 import { isoDate } from "../lib/dates";
 
-const APP_VERSION = "2.5.0";
+const APP_VERSION = "2.6.0";
 
 export function SettingsScreen() {
   const { store, loadExample, exportJson, importJson, clearAll } = useStore();
@@ -145,6 +145,15 @@ export function SettingsScreen() {
           </li>
           <li>ábrela desde el icono; ya funciona sin conexión (modo avión incluido)</li>
         </ol>
+      </section>
+
+      <section className="card">
+        <h3 className="rule rule--sm">biblioteca de ejercicios</h3>
+        <p className="dim">
+          Los ~870 ejercicios con foto e instrucciones vienen de{" "}
+          <strong>free-exercise-db</strong> (dominio público), traducidos al español.
+          Las fotos se guardan en la app para funcionar sin conexión.
+        </p>
       </section>
 
       <section className="card">

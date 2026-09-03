@@ -13,6 +13,9 @@ serie que completas.
   - _natación_: series × distancia, descanso, tiempo por serie.
 - **Registro por serie**: marcas cada `[ ]` → `[x]`; el ejercicio se cierra al completarlas.
   Si la plantilla no tiene ejercicios, marcas el día entero como hecho con un botón.
+- **Biblioteca de ejercicios**: ~870 ejercicios con foto e instrucciones (en español, se
+  busca también por el nombre en inglés), filtrables por músculo y material. Puedes crear
+  los tuyos con foto del móvil y elegir cualquiera al montar una plantilla o editar un día.
 - **El pasado no se reescribe**: en cuanto marcas algo en un día, ese día queda fijado.
   Después puedes editar la plantilla libremente — solo cambia en los días aún sin marcar.
 - **Editar un solo día**: desde «hoy» puedes ajustar los ejercicios de una fecha concreta
@@ -28,7 +31,8 @@ serie que completas.
 | **hoy**         | El entreno del día; marcas serie a serie. Flechas para otros días. Puedes cambiar o cancelar el entreno de una fecha, o editar sus ejercicios solo para ese día, sin tocar la semana ni la plantilla. |
 | **mes**         | Calendario mensual: color y emoji por tipo, fondo lleno = día hecho, `×` = sin hacer. Toca un día para abrirlo. |
 | **semana**      | Los 7 días con su plantilla; asignar plantilla o abrir su editor.           |
-| **plantillas**  | Biblioteca: crear/editar plantillas (emoji, nombre, tipo, ejercicios).      |
+| **plantillas**  | Crear/editar plantillas (emoji, nombre, tipo, ejercicios); al añadir ejercicio de fuerza puedes elegir del catálogo. |
+| **biblio**      | Catálogo de ejercicios con foto: buscar, filtrar por músculo/material, ver ficha e instrucciones. Tus ejercicios propios (con foto) en la misma lista. |
 | **ajustes**     | Rutina de ejemplo, copia de seguridad (exportar/importar), instalar, borrar. |
 
 ## Desarrollo local
@@ -93,19 +97,38 @@ semana e historial, y volver a importarlo.
 ## Estructura
 
 ```
-public/                      Iconos PWA (favicon, pwa-*, apple-touch-icon)
+public/
+  exercises/                 ~870 fotos .webp del catálogo (precacheadas, offline)
+  (iconos PWA: favicon, pwa-*, apple-touch-icon)
 src/
-  types.ts                   Modelo de datos (plantillas, tipos de día, ejercicios)
+  types.ts                   Modelo de datos (plantillas, tipos de día, ejercicios, ejercicios propios)
   store.tsx                  Estado global + persistencia en localStorage
   defaultData.ts             Store vacío + rutina de ejemplo
+  data/catalog.json          Catálogo de ejercicios traducido (se carga en un chunk aparte)
+  data/catalog.ts            Carga perezosa del catálogo + índice por id
   lib/dates.ts               Utilidades de fecha
   lib/progress.ts            Plan efectivo del día, progreso por serie, racha
   lib/format.ts              Formateo de fichas de ejercicio (4×8 · 60 kg · r90")
-  components/                TabBar, SetBoxes, AsciiBar, ExerciseEditor, EmojiPicker
-  screens/                   TodayScreen, CalendarScreen, WeekScreen, TemplatesScreen, SettingsScreen
+  lib/catalogVocab.ts        Músculos/material/categorías + traducción al español
+  lib/catalogSearch.ts       Búsqueda del catálogo (ES + EN, sin acentos)
+  components/                TabBar, SetBoxes, AsciiBar, ExerciseEditor, EmojiPicker, CatalogPicker, CustomExerciseForm, ExercisePhoto
+  screens/                   TodayScreen, CalendarScreen, WeekScreen, TemplatesScreen, LibraryScreen, SettingsScreen
+tools/build-catalog.mjs      Genera public/exercises/*.webp + src/data/catalog.json (una vez, en local)
 ```
+
+El catálogo y la pantalla `biblio` se cargan en chunks aparte (`React.lazy` + `import()`),
+así que el arranque de la app no cambia aunque el catálogo pese ~670 KB.
 
 ## Stack
 
 Vite 8 · React 18 · TypeScript · vite-plugin-pwa 1.3 (Workbox). Sin dependencias en runtime
 más allá de React. Los iconos son PNG estáticos en `public/`.
+
+La instalación en el móvil ocupa ~10 MB por las fotos del catálogo (se precachean todas para
+funcionar sin conexión). En despliegues posteriores solo se re-descarga lo que cambia.
+
+## Créditos
+
+Datos de ejercicios de [free-exercise-db](https://github.com/yuhonas/free-exercise-db)
+(dominio público / Unlicense), traducidos al español. Las fotos se recomprimen y empaquetan
+con la app; no se cargan de ningún servidor.

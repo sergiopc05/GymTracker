@@ -1,8 +1,11 @@
 import type { ReactNode } from "react";
-import type { Exercise } from "../types";
+import type { Exercise, StrengthExercise } from "../types";
 import { RUN_MODALITIES } from "../types";
-import type { ExercisePatch } from "../store";
+import { type ExercisePatch, useStore } from "../store";
 import { RUN_MODALITY_LABEL } from "../lib/format";
+import { catalogImageUrl } from "../lib/catalogImage";
+import { useCatalogEntry } from "../lib/useCatalogEntry";
+import { ExercisePhoto } from "./ExercisePhoto";
 
 interface Props {
   exercise: Exercise;
@@ -26,6 +29,42 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       <span className="f__label">{label}</span>
       {children}
     </label>
+  );
+}
+
+/** Vínculo con la biblioteca: miniatura + nombre + quitar. */
+function ExerciseLink({
+  ex,
+  onUnlink,
+}: {
+  ex: StrengthExercise;
+  onUnlink: () => void;
+}) {
+  const { store } = useStore();
+  const entry = useCatalogEntry(ex.catalogId);
+  const cx = ex.customExerciseId
+    ? store.customExercises.find((c) => c.id === ex.customExerciseId)
+    : null;
+
+  const src = ex.catalogId
+    ? catalogImageUrl(ex.catalogId)
+    : (cx?.photo ?? null);
+  const sub = ex.catalogId
+    ? entry
+      ? entry.name
+      : "de la biblioteca"
+    : cx
+      ? "ejercicio propio"
+      : "propio (borrado)";
+
+  return (
+    <div className="exlink">
+      <ExercisePhoto className="exlink__thumb" src={src} alt="" />
+      <span className="exlink__sub">{sub}</span>
+      <button type="button" className="linkbtn" onClick={onUnlink}>
+        quitar
+      </button>
+    </div>
   );
 }
 
@@ -64,6 +103,14 @@ export function ExerciseEditor({
       <div className="exed__fields">
         {ex.kind === "strength" && (
           <>
+            {(ex.catalogId || ex.customExerciseId) && (
+              <ExerciseLink
+                ex={ex}
+                onUnlink={() =>
+                  onPatch({ catalogId: undefined, customExerciseId: undefined })
+                }
+              />
+            )}
             <Field label="ejercicio">
               <input
                 type="text"

@@ -38,7 +38,10 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // webp = fotos del catálogo de ejercicios (public/exercises/*.webp).
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,webp}"],
+        // El chunk lazy con el catálogo (~1,5 MB) supera el tope por defecto de 2 MiB.
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         // App puramente local: no hay rutas de red que cachear en runtime.
         navigateFallback: "index.html",
         cleanupOutdatedCaches: true,

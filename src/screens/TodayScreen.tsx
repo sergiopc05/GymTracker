@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { useStore } from "../store";
 import { SetBoxes } from "../components/SetBoxes";
 import { AsciiBar } from "../components/AsciiBar";
 import { ExerciseEditor } from "../components/ExerciseEditor";
 import type { TabKey } from "../components/TabBar";
-import { DAY_TYPES } from "../types";
+import { DAY_TYPES, exerciseKindForType } from "../types";
+
+const CatalogPicker = lazy(() => import("../components/CatalogPicker"));
 import {
   WEEKDAY_LONG,
   addDays,
@@ -37,11 +39,13 @@ export function TodayScreen({ date, setDate, goTo }: Props) {
     resetDay,
     clearSets,
     addDayExercise,
+    addDayLinkedExercise,
     updateDayExercise,
     deleteDayExercise,
     moveDayExercise,
     resyncDayPlan,
   } = useStore();
+  const [picking, setPicking] = useState(false);
 
   const today = startOfToday();
   const isToday = isoDate(date) === isoDate(today);
@@ -65,7 +69,10 @@ export function TodayScreen({ date, setDate, goTo }: Props) {
 
   const [editing, setEditing] = useState(false);
   // Salir del modo edición al cambiar de fecha o de plantilla enlazada.
-  useEffect(() => setEditing(false), [iso, currentId]);
+  useEffect(() => {
+    setEditing(false);
+    setPicking(false);
+  }, [iso, currentId]);
 
   function pick(value: string) {
     const next = value || null;
@@ -201,14 +208,32 @@ export function TodayScreen({ date, setDate, goTo }: Props) {
                 />
               ))}
             </ol>
-            <div className="btn-stack">
-              <button type="button" className="btn" onClick={() => addDayExercise(iso)}>
-                [ + añadir ejercicio ]
-              </button>
-              <button type="button" className="btn" onClick={() => setEditing(false)}>
-                [ listo ]
-              </button>
-            </div>
+            {exerciseKindForType(plan.type) === "strength" && picking ? (
+              <Suspense fallback={<p className="dim">cargando catálogo…</p>}>
+                <CatalogPicker
+                  onPick={(seed) => addDayLinkedExercise(iso, seed)}
+                  onBlank={() => addDayExercise(iso)}
+                  onClose={() => setPicking(false)}
+                />
+              </Suspense>
+            ) : (
+              <div className="btn-stack">
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() =>
+                    exerciseKindForType(plan.type) === "strength"
+                      ? setPicking(true)
+                      : addDayExercise(iso)
+                  }
+                >
+                  [ + añadir ejercicio ]
+                </button>
+                <button type="button" className="btn" onClick={() => setEditing(false)}>
+                  [ listo ]
+                </button>
+              </div>
+            )}
           </>
         )}
 

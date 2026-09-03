@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type {
+  CustomExercise,
   DayLog,
   DayPlanSnapshot,
   DayType,
@@ -23,6 +24,7 @@ import { emptyStore, exampleData } from "./defaultData";
 import { id } from "./lib/id";
 import { mondayIndex, parseIso } from "./lib/dates";
 import { resolveDay } from "./lib/progress";
+import { isEquipment, isMuscle } from "./lib/catalogVocab";
 
 const KEY = "gymtracker:v2";
 
@@ -58,6 +60,8 @@ function sanitizeExercise(raw: unknown, kind: Exercise["kind"]): Exercise | null
       kind: "strength",
       id: exId,
       name: str(o.name),
+      catalogId: o.catalogId ? str(o.catalogId) : undefined,
+      customExerciseId: o.customExerciseId ? str(o.customExerciseId) : undefined,
       sets,
       measure: o.measure === "time" ? "time" : "reps",
       reps: str(o.reps) || "10",
@@ -139,6 +143,40 @@ function sanitizeSnapshot(raw: unknown): DayPlanSnapshot | undefined {
     emoji: sanitizeEmoji(o.emoji),
     exercises: sanitizeExerciseArray(o.exercises, exerciseKindForType(type)),
   };
+}
+
+function sanitizeCustomExercise(raw: unknown): CustomExercise | null {
+  const o = asObject(raw);
+  if (!o) return null;
+  const muscles = Array.isArray(o.primaryMuscles)
+    ? o.primaryMuscles.filter(isMuscle)
+    : [];
+  const instructions = Array.isArray(o.instructions)
+    ? o.instructions.map(str).filter((s) => s.trim().length > 0)
+    : undefined;
+  const photo =
+    typeof o.photo === "string" &&
+    o.photo.startsWith("data:image/") &&
+    o.photo.length < 200_000
+      ? o.photo
+      : undefined;
+  return {
+    id: str(o.id) || id("cx"),
+    nameEs: str(o.nameEs) || "ejercicio sin nombre",
+    primaryMuscles: muscles,
+    equipment: isEquipment(o.equipment) ? o.equipment : null,
+    instructions: instructions && instructions.length > 0 ? instructions : undefined,
+    photo,
+    createdAt: numOrU(o.createdAt) ?? Date.now(),
+  };
+}
+
+function sanitizeCustomExercises(raw: unknown): CustomExercise[] {
+  return Array.isArray(raw)
+    ? raw
+        .map(sanitizeCustomExercise)
+        .filter((c): c is CustomExercise => c !== null)
+    : [];
 }
 
 function sanitizeLogs(raw: unknown): Store["logs"] {
@@ -224,6 +262,7 @@ function sanitizeStore(raw: unknown): Store {
     templates,
     routine: { week },
     logs: migrateLogs(templates, sanitizeLogs(o.logs)),
+    customExercises: sanitizeCustomExercises(o.customExercises),
   };
 }
 
@@ -265,6 +304,37 @@ function newExercise(kind: Exercise["kind"]): Exercise {
   if (kind === "swim")
     return { kind: "swim", id: id("e"), name: "", sets: 1, distanceM: 100 };
   return { kind: "strength", id: id("e"), name: "", sets: 3, measure: "reps", reps: "10" };
+}
+
+/** Semilla para añadir un ejercicio de fuerza vinculado al catálogo o a uno propio. */
+export interface ExerciseSeed {
+  name: string;
+  catalogId?: string;
+  customExerciseId?: string;
+}
+
+function newLinkedStrength(seed: ExerciseSeed): StrengthExercise {
+  return {
+    kind: "strength",
+    id: id("e"),
+    name: seed.name,
+    catalogId: seed.catalogId,
+    customExerciseId: seed.customExerciseId,
+    sets: 3,
+    measure: "reps",
+    reps: "10",
+  };
+}
+
+/** Presupuesto aproximado de localStorage antes de rechazar guardar (fotos propias). */
+export const STORAGE_LIMIT = 4_200_000;
+
+export function storeBytes(store: Store): number {
+  try {
+    return JSON.stringify(store).length;
+  } catch {
+    return 0;
+  }
 }
 
 // `measure` significa cosas distintas en fuerza y en running, así que se saca de la
@@ -358,6 +428,16 @@ interface StoreContextValue {
   deleteDayExercise: (iso: string, exId: string) => void;
   moveDayExercise: (iso: string, exId: string, dir: -1 | 1) => void;
   resyncDayPlan: (iso: string) => void;
+
+  // Ejercicios propios + añadir desde el catálogo.
+  addCustomExercise: (data: Omit<CustomExercise, "id" | "createdAt">) => string;
+  updateCustomExercise: (
+    cxId: string,
+    patch: Partial<Omit<CustomExercise, "id" | "createdAt">>,
+  ) => void;
+  deleteCustomExercise: (cxId: string) => void;
+  addLinkedExercise: (templateId: string, seed: ExerciseSeed) => void;
+  addDayLinkedExercise: (iso: string, seed: ExerciseSeed) => void;
 
   loadExample: () => void;
   exportJson: () => string;
@@ -587,6 +667,60 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // ------------------------------------------------------ ejercicios propios + catálogo
+
+  const addCustomExercise = useCallback(
+    (data: Omit<CustomExercise, "id" | "createdAt">): string => {
+      const cxId = id("cx");
+      setStore((s) => ({
+        ...s,
+        customExercises: [
+          ...s.customExercises,
+          { ...data, id: cxId, createdAt: Date.now() },
+        ],
+      }));
+      return cxId;
+    },
+    [],
+  );
+
+  const updateCustomExercise = useCallback(
+    (cxId: string, patch: Partial<Omit<CustomExercise, "id" | "createdAt">>) => {
+      setStore((s) => ({
+        ...s,
+        customExercises: s.customExercises.map((c) =>
+          c.id === cxId ? { ...c, ...patch } : c,
+        ),
+      }));
+    },
+    [],
+  );
+
+  const deleteCustomExercise = useCallback((cxId: string) => {
+    setStore((s) => ({
+      ...s,
+      customExercises: s.customExercises.filter((c) => c.id !== cxId),
+    }));
+  }, []);
+
+  /** Añade a una plantilla un ejercicio de fuerza vinculado (catálogo o propio). */
+  const addLinkedExercise = useCallback(
+    (templateId: string, seed: ExerciseSeed) => {
+      setStore((s) =>
+        withTemplate(s, templateId, (t) => ({
+          ...t,
+          exercises: [...t.exercises, newLinkedStrength(seed)],
+        })),
+      );
+    },
+    [],
+  );
+
+  /** Lo mismo pero sobre un día concreto (congela el día como cualquier edición). */
+  const addDayLinkedExercise = useCallback((iso: string, seed: ExerciseSeed) => {
+    setStore((s) => withDayExercises(s, iso, (exs) => [...exs, newLinkedStrength(seed)]));
+  }, []);
+
   const loadExample = useCallback(() => setStore(exampleData()), []);
 
   const exportJson = useCallback(() => JSON.stringify(store, null, 2), [store]);
@@ -634,6 +768,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       deleteDayExercise,
       moveDayExercise,
       resyncDayPlan,
+      addCustomExercise,
+      updateCustomExercise,
+      deleteCustomExercise,
+      addLinkedExercise,
+      addDayLinkedExercise,
       loadExample,
       exportJson,
       importJson,
@@ -661,6 +800,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       deleteDayExercise,
       moveDayExercise,
       resyncDayPlan,
+      addCustomExercise,
+      updateCustomExercise,
+      deleteCustomExercise,
+      addLinkedExercise,
+      addDayLinkedExercise,
       loadExample,
       exportJson,
       importJson,

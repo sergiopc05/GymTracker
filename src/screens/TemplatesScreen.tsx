@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { Suspense, lazy, useEffect, useState, type FormEvent } from "react";
 import { useStore } from "../store";
 import { DAY_TYPES, exerciseKindForType, type DayType } from "../types";
 import {
@@ -9,6 +9,8 @@ import {
 } from "../lib/format";
 import { ExerciseEditor } from "../components/ExerciseEditor";
 import { EmojiPicker } from "../components/EmojiPicker";
+
+const CatalogPicker = lazy(() => import("../components/CatalogPicker"));
 
 interface Props {
   openId: string | null;
@@ -24,6 +26,7 @@ export function TemplatesScreen({ openId, setOpenId }: Props) {
     setTemplateType,
     deleteTemplate,
     addExercise,
+    addLinkedExercise,
     updateExercise,
     deleteExercise,
     moveExercise,
@@ -32,6 +35,8 @@ export function TemplatesScreen({ openId, setOpenId }: Props) {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<DayType>("gym");
+  const [picking, setPicking] = useState(false);
+  useEffect(() => setPicking(false), [openId]);
 
   const open = openId ? store.templates.find((t) => t.id === openId) ?? null : null;
   const assignedCount = (id: string) =>
@@ -125,9 +130,23 @@ export function TemplatesScreen({ openId, setOpenId }: Props) {
               />
             ))}
           </ol>
-          <button type="button" className="btn" onClick={() => addExercise(open.id)}>
-            [ + añadir ejercicio ]
-          </button>
+          {exerciseKindForType(open.type) !== "strength" ? (
+            <button type="button" className="btn" onClick={() => addExercise(open.id)}>
+              [ + añadir ejercicio ]
+            </button>
+          ) : picking ? (
+            <Suspense fallback={<p className="dim">cargando catálogo…</p>}>
+              <CatalogPicker
+                onPick={(seed) => addLinkedExercise(open.id, seed)}
+                onBlank={() => addExercise(open.id)}
+                onClose={() => setPicking(false)}
+              />
+            </Suspense>
+          ) : (
+            <button type="button" className="btn" onClick={() => setPicking(true)}>
+              [ + añadir ejercicio ]
+            </button>
+          )}
         </section>
 
         <button

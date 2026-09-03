@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Suspense, lazy, useState } from "react";
 import { StoreProvider } from "./store";
 import { TabBar, type TabKey } from "./components/TabBar";
 import { TodayScreen } from "./screens/TodayScreen";
@@ -7,6 +7,9 @@ import { WeekScreen } from "./screens/WeekScreen";
 import { TemplatesScreen } from "./screens/TemplatesScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 import { startOfToday } from "./lib/dates";
+
+// La biblioteca arrastra el catálogo (~1 MB) → chunk aparte, solo al abrir la pestaña.
+const LibraryScreen = lazy(() => import("./screens/LibraryScreen"));
 
 export default function App() {
   const [tab, setTab] = useState<TabKey>("hoy");
@@ -56,6 +59,11 @@ export default function App() {
           )}
           {tab === "plantillas" && (
             <TemplatesScreen openId={openTemplateId} setOpenId={setOpenTemplateId} />
+          )}
+          {tab === "biblioteca" && (
+            <Suspense fallback={<p className="dim screen">cargando biblioteca…</p>}>
+              <LibraryScreen />
+            </Suspense>
           )}
           {tab === "ajustes" && <SettingsScreen />}
         </main>

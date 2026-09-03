@@ -16,6 +16,7 @@ export function emptyStore(): Store {
     templates: [],
     routine: { week: [null, null, null, null, null, null, null] },
     logs: {},
+    customExercises: [],
   };
 }
 
@@ -163,5 +164,6 @@ export function exampleData(): Store {
       ],
     },
     logs: {},
+    customExercises: [],
   };
 }

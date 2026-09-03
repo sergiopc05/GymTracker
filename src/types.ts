@@ -1,5 +1,7 @@
 // Modelo de datos de GymTracker v2. Todo vive en localStorage; no hay servidor.
 
+import type { Equipment, Muscle } from "./lib/catalogVocab";
+
 export type DayType = "gym" | "running" | "core" | "swim" | "rest";
 
 export const DAY_TYPES: DayType[] = ["gym", "running", "core", "swim", "rest"];
@@ -9,6 +11,10 @@ export interface StrengthExercise {
   kind: "strength";
   id: string;
   name: string;
+  /** Vínculo con el catálogo (free-exercise-db). Solo enriquece la UI; `name` manda. */
+  catalogId?: string;
+  /** Vínculo con un ejercicio propio (`Store.customExercises`). Excluyente con `catalogId`. */
+  customExerciseId?: string;
   sets: number;
   /** Cómo se cuenta cada serie: por repeticiones (`reps`) o por tiempo (`durationSec`). */
   measure: "reps" | "time";
@@ -109,12 +115,27 @@ export interface DayLog {
   done?: boolean;
 }
 
+/** Ejercicio creado por el usuario. Vive en el store (entra en la copia de seguridad). */
+export interface CustomExercise {
+  id: string;
+  nameEs: string;
+  primaryMuscles: Muscle[];
+  equipment: Equipment | null;
+  /** Pasos, uno por línea. */
+  instructions?: string[];
+  /** dataURL (image/webp o image/jpeg), redimensionada a ~320 px, <= ~25 KB. */
+  photo?: string;
+  createdAt: number;
+}
+
 export interface Store {
   version: 2;
   templates: Template[];
   routine: Routine;
   /** clave = fecha ISO local "YYYY-MM-DD" */
   logs: Record<string, DayLog>;
+  /** Ejercicios propios del usuario, reutilizables en plantillas y días. */
+  customExercises: CustomExercise[];
 }
 
 /** Tipo de ejercicio que corresponde a cada tipo de día. */

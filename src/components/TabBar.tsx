@@ -1,11 +1,33 @@
-export type TabKey = "hoy" | "mes" | "semana" | "plantillas" | "ajustes";
+export type TabKey =
+  | "hoy"
+  | "mes"
+  | "semana"
+  | "plantillas"
+  | "biblioteca"
+  | "ajustes";
 
 interface Props {
   active: TabKey;
   onChange: (tab: TabKey) => void;
 }
 
-const ORDER: TabKey[] = ["hoy", "mes", "semana", "plantillas", "ajustes"];
+const ORDER: TabKey[] = [
+  "hoy",
+  "mes",
+  "semana",
+  "plantillas",
+  "biblioteca",
+  "ajustes",
+];
+
+const LABEL: Record<TabKey, string> = {
+  hoy: "hoy",
+  mes: "mes",
+  semana: "semana",
+  plantillas: "plantillas",
+  biblioteca: "biblio",
+  ajustes: "ajustes",
+};
 
 export function TabBar({ active, onChange }: Props) {
   return (
@@ -21,7 +43,7 @@ export function TabBar({ active, onChange }: Props) {
           <span className="tab__mark" aria-hidden="true">
             {active === tab ? "▸" : " "}
           </span>
-          {tab}
+          {LABEL[tab]}
         </button>
       ))}
     </nav>
