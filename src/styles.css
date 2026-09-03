@@ -118,8 +118,11 @@ h4 {
 }
 
 .appbar__logo {
-  color: var(--accent);
-  font-weight: 700;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 5px;
+  display: block;
 }
 
 .appbar__title {
@@ -1022,9 +1025,8 @@ button.chip {
 
 .libphoto {
   width: 100%;
-  max-height: 260px;
-  object-fit: contain;
-  background: #fff;
+  height: auto;
+  display: block;
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
@@ -1115,9 +1117,8 @@ button.chip {
 }
 .exficha__photo {
   width: 100%;
-  max-height: 180px;
-  object-fit: contain;
-  background: #fff;
+  height: auto;
+  display: block;
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }

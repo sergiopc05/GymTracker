@@ -27,9 +27,13 @@ export default function App() {
     <StoreProvider>
       <div className="app">
         <header className="appbar">
-          <span className="appbar__logo" aria-hidden="true">
-            {"[>_]"}
-          </span>
+          <img
+            className="appbar__logo"
+            src={`${import.meta.env.BASE_URL}logo.png`}
+            alt=""
+            width={22}
+            height={22}
+          />
           <span className="appbar__title">gymtracker</span>
         </header>
 
