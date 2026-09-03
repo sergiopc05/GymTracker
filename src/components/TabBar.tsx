@@ -22,10 +22,10 @@ const ORDER: TabKey[] = [
 
 const LABEL: Record<TabKey, string> = {
   hoy: "hoy",
-  mes: "mes",
-  semana: "semana",
+  mes: "calendario",
+  semana: "rutina",
   plantillas: "plantillas",
-  biblioteca: "biblio",
+  biblioteca: "ejercicios",
   ajustes: "ajustes",
 };
 
