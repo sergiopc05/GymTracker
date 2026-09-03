@@ -22,8 +22,8 @@ import type {
 import { DAY_TYPES, RUN_MODALITIES, exerciseKindForType } from "./types";
 import { emptyStore, exampleData } from "./defaultData";
 import { id } from "./lib/id";
-import { mondayIndex, parseIso } from "./lib/dates";
-import { resolveDay } from "./lib/progress";
+import { parseIso } from "./lib/dates";
+import { resolveDay, routineTemplateIdOn } from "./lib/progress";
 import { isEquipment, isMuscle } from "./lib/catalogVocab";
 
 const KEY = "gymtracker:v2";
@@ -358,7 +358,7 @@ const exArray = {
 /** Plantilla enlazada a una fecha: la del log si existe, si no la de la semana. */
 function linkedTemplate(store: Store, iso: string): Template | null {
   const log = store.logs[iso] ?? null;
-  const tid = log ? log.templateId : (store.routine.week[mondayIndex(parseIso(iso))] ?? null);
+  const tid = log ? log.templateId : routineTemplateIdOn(store, parseIso(iso));
   return tid ? (store.templates.find((t) => t.id === tid) ?? null) : null;
 }
 
@@ -583,7 +583,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (!cur) return s;
       const logs = { ...s.logs };
       const hasSets = Object.values(cur.sets).some((arr) => arr.some(Boolean));
-      const weekdayId = s.routine.week[mondayIndex(parseIso(iso))] ?? null;
+      const weekdayId = routineTemplateIdOn(s, parseIso(iso));
       const isOverride = cur.templateId !== weekdayId;
       // Sin nada más que guardar, sin cambio puntual y sin ejercicios propios: borrar el log.
       if (hasSets || isOverride || cur.customized) logs[iso] = { ...cur, done: undefined };
@@ -657,7 +657,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const liveIds = new Set(t.exercises.map((e) => e.id));
       const sets: Record<string, boolean[]> = {};
       for (const [k, v] of Object.entries(cur.sets)) if (liveIds.has(k)) sets[k] = v;
-      const weeklyId = s.routine.week[mondayIndex(parseIso(iso))] ?? null;
+      const weeklyId = routineTemplateIdOn(s, parseIso(iso));
       const empty =
         cur.done !== true && !Object.values(sets).some((a) => a.some(Boolean));
       const logs = { ...s.logs };

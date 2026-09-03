@@ -18,7 +18,12 @@ import {
   mondayIndex,
   startOfToday,
 } from "../lib/dates";
-import { currentStreak, dayProgress, resolveDay } from "../lib/progress";
+import {
+  currentStreak,
+  dayProgress,
+  resolveDay,
+  routineTemplateIdOn,
+} from "../lib/progress";
 import {
   DAY_TYPE_GLYPH,
   DAY_TYPE_LABEL,
@@ -59,7 +64,7 @@ export function TodayScreen({ date, setDate, goTo }: Props) {
   const progress = dayProgress(resolved);
   const streak = currentStreak(store, today);
 
-  const weeklyId = store.routine.week[weekday];
+  const weeklyId = routineTemplateIdOn(store, date);
   const weeklyTemplate = weeklyId
     ? (store.templates.find((t) => t.id === weeklyId) ?? null)
     : null;

@@ -1,7 +1,19 @@
 // Cálculo de progreso y racha a partir de plantillas + asignación semanal + logs.
 
 import type { DayLog, DayType, Exercise, Store, Template } from "../types";
-import { addDays, isoDate, mondayIndex, startOfToday } from "./dates";
+import { addDays, isoDate, mondayIndex, startOfToday, startOfWeek } from "./dates";
+
+/**
+ * templateId de la rutina semanal que rige un día concreto, o `null`.
+ *
+ * La rutina solo aplica desde el lunes de la semana en curso en adelante. Los días
+ * de semanas anteriores que no tengan registro propio quedan en descanso: establecer
+ * o cambiar la rutina no "rellena" hacia atrás el calendario.
+ */
+export function routineTemplateIdOn(store: Store, date: Date): string | null {
+  if (isoDate(date) < isoDate(startOfWeek(startOfToday()))) return null;
+  return store.routine.week[mondayIndex(date)] ?? null;
+}
 
 /** Plan efectivo de un día: el snapshot congelado o la plantilla en vivo. */
 export interface ResolvedPlan {
@@ -29,7 +41,7 @@ export interface ResolvedDay {
 export function resolveDay(store: Store, date: Date): ResolvedDay {
   const iso = isoDate(date);
   const log = store.logs[iso] ?? null;
-  const weekdayId = store.routine.week[mondayIndex(date)] ?? null;
+  const weekdayId = routineTemplateIdOn(store, date);
   // Si hay log, manda su plantilla (que puede ser null = descanso puntual).
   // Si no, la asignación semanal.
   const templateId = log ? log.templateId : weekdayId;

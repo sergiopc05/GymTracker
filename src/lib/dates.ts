@@ -42,6 +42,11 @@ export function startOfToday(): Date {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
+/** Lunes (00:00) de la semana que contiene `d`. */
+export function startOfWeek(d: Date): Date {
+  return addDays(d, -mondayIndex(d));
+}
+
 export function startOfMonth(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
