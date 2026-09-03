@@ -3,6 +3,9 @@ import { useStore } from "../store";
 import { SetBoxes } from "../components/SetBoxes";
 import { AsciiBar } from "../components/AsciiBar";
 import { ExerciseEditor } from "../components/ExerciseEditor";
+import { ExerciseFicha } from "../components/ExerciseFicha";
+import { ExercisePhoto } from "../components/ExercisePhoto";
+import { catalogImageUrl } from "../lib/catalogImage";
 import type { TabKey } from "../components/TabBar";
 import { DAY_TYPES, exerciseKindForType } from "../types";
 
@@ -68,10 +71,12 @@ export function TodayScreen({ date, setDate, goTo }: Props) {
     !!log && Object.values(log.sets).some((arr) => arr.some(Boolean));
 
   const [editing, setEditing] = useState(false);
+  const [fichaFor, setFichaFor] = useState<string | null>(null);
   // Salir del modo edición al cambiar de fecha o de plantilla enlazada.
   useEffect(() => {
     setEditing(false);
     setPicking(false);
+    setFichaFor(null);
   }, [iso, currentId]);
 
   function pick(value: string) {
@@ -252,17 +257,52 @@ export function TodayScreen({ date, setDate, goTo }: Props) {
                     const done = log?.sets[ex.id] ?? [];
                     const doneCount = done.slice(0, ex.sets).filter(Boolean).length;
                     const exComplete = doneCount >= ex.sets;
+                    const linked =
+                      ex.kind === "strength" &&
+                      !!(ex.catalogId || ex.customExerciseId);
+                    const thumbSrc =
+                      ex.kind === "strength" && ex.catalogId
+                        ? catalogImageUrl(ex.catalogId)
+                        : ex.kind === "strength" && ex.customExerciseId
+                          ? (store.customExercises.find(
+                              (c) => c.id === ex.customExerciseId,
+                            )?.photo ?? null)
+                          : null;
                     return (
                       <li key={ex.id} className={exComplete ? "exrow is-done" : "exrow"}>
-                        <div className="exrow__head">
-                          <span className="exrow__name">{fmtExerciseName(ex)}</span>
-                          <span className="exrow__spec">{fmtExerciseSpec(ex)}</span>
+                        <div className="exrow__top">
+                          {linked && (
+                            <button
+                              type="button"
+                              className="exrow__thumb"
+                              aria-expanded={fichaFor === ex.id}
+                              aria-label="Ver ficha del ejercicio"
+                              onClick={() =>
+                                setFichaFor((f) => (f === ex.id ? null : ex.id))
+                              }
+                            >
+                              <ExercisePhoto
+                                className="exrow__thumbimg"
+                                src={thumbSrc}
+                                alt=""
+                              />
+                            </button>
+                          )}
+                          <div className="exrow__main">
+                            <div className="exrow__head">
+                              <span className="exrow__name">{fmtExerciseName(ex)}</span>
+                              <span className="exrow__spec">{fmtExerciseSpec(ex)}</span>
+                            </div>
+                            <SetBoxes
+                              count={ex.sets}
+                              done={done}
+                              onToggle={(i) => toggleSet(iso, ex.id, i)}
+                            />
+                          </div>
                         </div>
-                        <SetBoxes
-                          count={ex.sets}
-                          done={done}
-                          onToggle={(i) => toggleSet(iso, ex.id, i)}
-                        />
+                        {linked && ex.kind === "strength" && fichaFor === ex.id && (
+                          <ExerciseFicha ex={ex} />
+                        )}
                       </li>
                     );
                   })}

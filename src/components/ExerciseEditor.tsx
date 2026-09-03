@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { Exercise, StrengthExercise } from "../types";
 import { RUN_MODALITIES } from "../types";
 import { type ExercisePatch, useStore } from "../store";
@@ -6,6 +6,7 @@ import { RUN_MODALITY_LABEL } from "../lib/format";
 import { catalogImageUrl } from "../lib/catalogImage";
 import { useCatalogEntry } from "../lib/useCatalogEntry";
 import { ExercisePhoto } from "./ExercisePhoto";
+import { ExerciseFicha } from "./ExerciseFicha";
 
 interface Props {
   exercise: Exercise;
@@ -32,7 +33,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-/** Vínculo con la biblioteca: miniatura + nombre + quitar. */
+/** Vínculo con la biblioteca: miniatura pulsable (despliega la ficha) + quitar. */
 function ExerciseLink({
   ex,
   onUnlink,
@@ -45,6 +46,7 @@ function ExerciseLink({
   const cx = ex.customExerciseId
     ? store.customExercises.find((c) => c.id === ex.customExerciseId)
     : null;
+  const [open, setOpen] = useState(false);
 
   const src = ex.catalogId
     ? catalogImageUrl(ex.catalogId)
@@ -58,13 +60,25 @@ function ExerciseLink({
       : "propio (borrado)";
 
   return (
-    <div className="exlink">
-      <ExercisePhoto className="exlink__thumb" src={src} alt="" />
-      <span className="exlink__sub">{sub}</span>
-      <button type="button" className="linkbtn" onClick={onUnlink}>
-        quitar
-      </button>
-    </div>
+    <>
+      <div className="exlink">
+        <button
+          type="button"
+          className="exlink__open"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <ExercisePhoto className="exlink__thumb" src={src} alt="" />
+          <span className="exlink__sub">
+            {sub} {open ? "▴" : "▾"}
+          </span>
+        </button>
+        <button type="button" className="linkbtn" onClick={onUnlink}>
+          quitar
+        </button>
+      </div>
+      {open && <ExerciseFicha ex={ex} />}
+    </>
   );
 }
 

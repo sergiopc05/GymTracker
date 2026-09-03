@@ -16,6 +16,8 @@ serie que completas.
 - **Biblioteca de ejercicios**: ~870 ejercicios con foto e instrucciones (en español, se
   busca también por el nombre en inglés), filtrables por músculo y material. Puedes crear
   los tuyos con foto del móvil y elegir cualquiera al montar una plantilla o editar un día.
+  Un ejercicio elegido de la biblioteca lleva una miniatura pulsable en la plantilla y en
+  «hoy»: la tocas y se despliega su foto e instrucciones sin salir de la pantalla.
 - **El pasado no se reescribe**: en cuanto marcas algo en un día, ese día queda fijado.
   Después puedes editar la plantilla libremente — solo cambia en los días aún sin marcar.
 - **Editar un solo día**: desde «hoy» puedes ajustar los ejercicios de una fecha concreta
@@ -111,7 +113,7 @@ src/
   lib/format.ts              Formateo de fichas de ejercicio (4×8 · 60 kg · r90")
   lib/catalogVocab.ts        Músculos/material/categorías + traducción al español
   lib/catalogSearch.ts       Búsqueda del catálogo (ES + EN, sin acentos)
-  components/                TabBar, SetBoxes, AsciiBar, ExerciseEditor, EmojiPicker, CatalogPicker, CustomExerciseForm, ExercisePhoto
+  components/                TabBar, SetBoxes, AsciiBar, ExerciseEditor, ExerciseFicha, EmojiPicker, CatalogPicker, CustomExerciseForm, ExercisePhoto
   screens/                   TodayScreen, CalendarScreen, WeekScreen, TemplatesScreen, LibraryScreen, SettingsScreen
 tools/build-catalog.mjs      Genera public/exercises/*.webp + src/data/catalog.json (una vez, en local)
 ```
